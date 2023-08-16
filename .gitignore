@@ -13,5 +13,8 @@ docs/
 # Dotenv file
 .env
 
+# VSCode
+.vscode/
+
 # Mac
 .DS_Store
