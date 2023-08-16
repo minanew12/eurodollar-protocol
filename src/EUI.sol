@@ -5,34 +5,39 @@ import "openzeppelin-contracts-upgradeable/security/PausableUpgradeable.sol";
 import "openzeppelin-contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
 import "openzeppelin-contracts-upgradeable/proxy/utils/Initializable.sol";
 import "openzeppelin-contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "./Blocklist.sol";
+import "./Allowlist.sol";
 import "./RoleControl.sol";
+import "./EUIVault.sol";
 
 /**
  * @author  Fenris
- * @title   An ERC20 contract named EuroDollar
+ * @title   An ERC20 contract named EuroInvest
  * @dev     Inherits the OpenZepplin ERC20Upgradeable implentation
- * @notice  Serves as a stable token
+ * @notice  Serves as a sercurity token
  */
-
-contract EUD is
+contract EUI is
     Initializable,
+    ERC20Upgradeable,
+    EUIVault,
     PausableUpgradeable,
     RoleControl,
     ERC20PermitUpgradeable,
     UUPSUpgradeable,
-    Blocklist
+    Allowlist
 {
-    mapping(address => uint256) public frozenBalances;
+    mapping(address => uint256) private _frozenBalances;
 
     /**
-     * @notice  The function using this modifier will only execute if the account is not blocked.
-     * @notice  If the account is blocked, the transaction will be reverted with the error message "Account is blocked."
-     * @dev     Modifier to check if the given account is not blocked.
-     * @param   account  The address to be checked for blocklisting.
+     * @notice  The function using this modifier will only execute if the account is allowed.
+     * @notice  If the account is not allowed, the transaction will be reverted with the error message "Account is not allowed".
+     * @dev     Modifier to check if the given account is allowed.
+     * @param   account  The address to be checked for allowlisting.
      */
-    modifier blocked(address account) {
-        require(isBlocked(account) == false, "Account is blocked");
+    modifier verified(address account) {
+        require(
+            isAllowed(account) == true,
+            "Account is not allowed"
+        );
         _;
     }
 
@@ -49,18 +54,23 @@ contract EUD is
 
     /**
      * @notice  This function is called only once during the contract deployment process.
-     * @notice  It sets up the EUD token with essential features and permissions.
-     * @notice  The contracts' addresses for blocklisting and access control are provided as parameters.
-     * @dev     Initialization function to set up the EuroDollar (EUD) token contract.
+     * @notice  It sets up the EUI token and associated contracts with essential features and permissions.
+     * @notice  The contracts' addresses for blocklisting, allowlisting, access control are provided as parameters.
+     * @dev     Initialization function to set up the EuroInvest (EUI) token contract.
      * @param   accessControlAddress  The address of the Access Control contract.
+     * @param   eudAddress  The address of the EuroDollar (EUD) token contract.
+     * @param   tokenFlipperAddress  The address of the token flipper contract.
      */
     function initialize(
-        address accessControlAddress
+        address accessControlAddress,
+        address eudAddress,
+        address tokenFlipperAddress
     ) public initializer {
-        __ERC20_init("EuroDollar", "EUD");
+        __ERC20_init("EuroDollar Invest", "EUI");
+        __EUIVault_init(eudAddress, tokenFlipperAddress);
         __Pausable_init();
         __RoleControl_init(accessControlAddress);
-        __ERC20Permit_init("EuroDollar");
+        __ERC20Permit_init("EuroDollar Invest");
         __UUPSUpgradeable_init();
     }
 
@@ -89,7 +99,7 @@ contract EUD is
     /**
      * @notice  This function can only be called by an account with the `MINT_ROLE`.
      * @notice  It mints new tokens and assigns them to the specified recipient's account.
-     * @notice  The recipient's account must not be blocklisted.
+     * @notice  The recipient's account must not be blocklisted and must be verified.
      * @dev     Mints new tokens and adds them to the specified account.
      * @param   to  The address to receive the newly minted tokens.
      * @param   amount  The amount of tokens to mint and add to the account.
@@ -97,7 +107,7 @@ contract EUD is
     function mint(
         address to,
         uint256 amount
-    ) public onlyRole(MINT_ROLE) blocked(to) {
+    ) public onlyRole(MINT_ROLE) verified(to) {
         _mint(to, amount);
     }
 
@@ -132,8 +142,8 @@ contract EUD is
     }
 
     /**
-     * @notice  This function overrides the ERC20 `transfer` function.
-     * @notice  It ensures the account that token transfers are not in blocklist.
+     * @notice  This function overrides both ERC20Upgradeable `transfer` and IERC20Upgradeable `transfer` functions.
+     * @notice  It ensures that token transfers are allowed for verified accounts and not allowed for blocklisted accounts.
      * @notice  The function returns `true` if the transfer is successful; otherwise, it reverts with an error.
      * @dev     Transfers a specific amount of tokens to the specified address.
      * @param   to  The address to which tokens will be transferred.
@@ -145,17 +155,17 @@ contract EUD is
         uint256 amount
     )
         public
-        override
-        blocked(msg.sender)
-        blocked(to)
+        override(ERC20Upgradeable, IERC20Upgradeable)
+        verified(msg.sender)
+        verified(to)
         returns (bool)
     {
         super.transfer(to, amount);
     }
 
     /**
-     * @notice  This function overrides the ERC20 `approve` function.
-     * @notice  It ensures that approval is not allowed for blocklisted accounts.
+     * @notice  This function overrides both ERC20Upgradeable `approve` and IERC20Upgradeable `approve` functions.
+     * @notice  It ensures that approval is allowed for verified accounts and not allowed for blocklisted accounts.
      * @notice  The function returns `true` if the approval is successful; otherwise, it reverts with an error.
      * @dev     Sets the allowance for a spender to spend tokens on behalf of the owner.
      * @param   spender  The address of the spender being allowed to spend tokens.
@@ -167,40 +177,46 @@ contract EUD is
         uint256 amount
     )
         public
-        override
-        blocked(msg.sender)
-        blocked(spender)
+        override(ERC20Upgradeable, IERC20Upgradeable)
+        verified(msg.sender)
+        verified(spender)
         returns (bool)
     {
         super.approve(spender, amount);
     }
 
     /**
-     * @notice  This function overrides the ERC20 `transferFrom` function.
-     * @notice  It ensures that token transfers are not allowed for blocklisted accounts.
+     * @notice  This function overrides both ERC20Upgradeable `transferFrom` and IERC20Upgradeable `transferFrom` functions.
+     * @notice  It ensures that token transfers are allowed for verified accounts and not allowed for blocklisted accounts.
      * @notice  The function returns `true` if the transfer is successful; otherwise, it reverts with an error.
      * @dev     Transfers tokens from one address to another using the allowance mechanism.
-     * @param   from  The address from which tokens are transferred.
-     * @param   to  The address to which tokens are transferred.
+     * @param   from    The address from which tokens are transferred.
+     * @param   to      The address to which tokens are transferred.
      * @param   amount  The amount of tokens to be transferred.
-     * @return  bool  A boolean value indicating whether the transfer was successful.
+     * @return  bool    A boolean value indicating whether the transfer was successful.
      */
     function transferFrom(
         address from,
         address to,
         uint256 amount
-    ) public override blocked(from) blocked(to) returns (bool) {
+    )
+        public
+        override(ERC20Upgradeable, IERC20Upgradeable)
+        verified(from)
+        verified(to)
+        returns (bool)
+    {
         super.transferFrom(from, to, amount);
     }
 
     /**
-     * @notice  This function overrides the ERC20 `increaseAllowance` function.
-     * @notice  It ensures that increasing the allowance is not allowed for blocklisted accounts.
+     * @notice  This function overrides both ERC20Upgradeable `increaseAllowance` and IERC20Upgradeable `increaseAllowance` functions.
+     * @notice  It ensures that increasing the allowance is allowed for verified accounts and not allowed for blocklisted accounts.
      * @notice  The function returns `true` if the allowance increase is successful; otherwise, it reverts with an error.
      * @dev     Increases the allowance for a spender to spend tokens on behalf of the owner.
-     * @param   spender  The address of the spender whose allowance is being increased.
-     * @param   addedValue  The additional amount of tokens the spender is allowed to spend.
-     * @return  bool  A boolean value indicating whether the allowance increase was successful.
+     * @param   spender The address of the spender whose allowance is being increased.
+     * @param   addedValue The additional amount of tokens the spender is allowed to spend.
+     * @return  bool A boolean value indicating whether the allowance increase was successful.
      */
     function increaseAllowance(
         address spender,
@@ -208,21 +224,21 @@ contract EUD is
     )
         public
         override
-        blocked(msg.sender)
-        blocked(spender)
+        verified(msg.sender)
+        verified(spender)
         returns (bool)
     {
         super.increaseAllowance(spender, addedValue);
     }
 
     /**
-     * @notice  This function overrides the ERC20 `decreaseAllowance` function.
-     * @notice  It ensures that decreasing the allowance is not allowed for blocklisted accounts.
+     * @notice  This function overrides both ERC20Upgradeable `decreaseAllowance` and IERC20Upgradeable `decreaseAllowance` functions.
+     * @notice  It ensures that decreasing the allowance is allowed for verified accounts and not allowed for blocklisted accounts.
      * @notice  The function returns `true` if the allowance decrease is successful; otherwise, it reverts with an error.
      * @dev     Decreases the allowance for a spender to spend tokens on behalf of the owner.
-     * @param   spender  The address of the spender whose allowance is being decreased.
-     * @param   subtractedValue  The amount by which the spender's allowance will be decreased.
-     * @return  bool  A boolean value indicating whether the allowance decrease was successful.
+     * @param   spender The address of the spender whose allowance is being decreased.
+     * @param   subtractedValue The amount by which the spender's allowance will be decreased.
+     * @return  bool    A boolean value indicating whether the allowance decrease was successful.
      */
     function decreaseAllowance(
         address spender,
@@ -230,12 +246,25 @@ contract EUD is
     )
         public
         override
-        blocked(msg.sender)
-        blocked(spender)
+        verified(msg.sender)
+        verified(spender)
         returns (bool)
     {
         super.decreaseAllowance(spender, subtractedValue);
     }
+
+    // ERC1967
+    /**
+     * @notice  This function is called internally to authorize an upgrade.
+     * @notice  Only accounts with the `UPGRADER_ROLE` can call this function.
+     * @notice  This function is used to control access to contract upgrades.
+     * @notice  The function does not perform any other action other than checking the role.
+     * @dev     Internal function to authorize an upgrade to a new implementation.
+     * @param   newImplementation  The address of the new implementation contract.
+     */
+    function _authorizeUpgrade(
+        address newImplementation
+    ) internal override onlyRole(UPGRADER_ROLE) {}
 
     /**
      * @notice  This function overrides the ERC20Permit `permit` function.
@@ -258,8 +287,17 @@ contract EUD is
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) public override blocked(owner) blocked(spender) {
+    )
+        public
+        override
+        verified(owner)
+        verified(spender)
+    {
         super.permit(owner, spender, value, deadline, v, r, s);
+    }
+
+    function frozenBalanceOf(address account) public view returns (uint256) {
+        return _frozenBalances[account];
     }
 
     function freeze(
@@ -268,7 +306,7 @@ contract EUD is
         uint256 amount
     ) external onlyRole(FREEZER_ROLE) {
         _transfer(from, to, amount);
-        frozenBalances[from] += amount;
+        _frozenBalances[from] += amount;
     }
 
     function release(
@@ -277,23 +315,10 @@ contract EUD is
         uint256 amount
     ) external onlyRole(FREEZER_ROLE) {
         require(
-            frozenBalances[to] >= amount,
+            _frozenBalances[to] >= amount,
             "Release amount exceeds balance"
         );
-        frozenBalances[to] -= amount;
+        _frozenBalances[to] -= amount;
         _transfer(from, to, amount);
     }
-
-    // ERC1967
-    /**
-     * @notice  This function is called internally to authorize an upgrade.
-     * @notice  Only accounts with the `UPGRADER_ROLE` can call this function.
-     * @notice  This function is used to control access to contract upgrades.
-     * @notice  The function does not perform any other action other than checking the role.
-     * @dev     Internal function to authorize an upgrade to a new implementation.
-     * @param   newImplementation  The address of the new implementation contract.
-     */
-    function _authorizeUpgrade(
-        address newImplementation
-    ) internal override onlyRole(UPGRADER_ROLE) {}
 }
