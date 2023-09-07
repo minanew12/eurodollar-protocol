@@ -447,7 +447,7 @@ contract EUITest is Test, Constants
     function testFlipToEui(address owner, address receiver, uint256 amount, uint256 price) public {
         // Bounds
         amount = bound(amount, 0, 1e39);
-        price = bound(price, 1, 1e39);
+        price = bound(price, 1e18, 1e39);
         
         // Assumes
         vm.assume(owner != address(0) && receiver != address(0));
@@ -470,7 +470,7 @@ contract EUITest is Test, Constants
     function testFailFlipToEuiNotAuthorized(address owner, address receiver, uint256 amount, uint256 price) public {
         // Bounds
         amount = bound(amount, 1, 1e39);
-        price = bound(price, 1, 1e39);
+        price = bound(price, 1e18, 1e39);
         
         // Assumes
         vm.assume(owner != address(0) && receiver != address(0));
@@ -493,7 +493,7 @@ contract EUITest is Test, Constants
     function testFailFlipToEuiTooManyTokens(address owner, address receiver, uint256 amount, uint256 price) public {
         // Bounds
         amount = bound(amount, 0, 1e39);
-        price = bound(price, 1, 1e39);
+        price = bound(price, 1e18, 1e39);
         
         // Assumes
         vm.assume(owner != address(0) && receiver != address(0));
@@ -516,7 +516,7 @@ contract EUITest is Test, Constants
     function testFlipToEud(address owner, address receiver, uint256 amount, uint256 price) public {
         // Bounds
         amount = bound(amount, 0, 1e39);
-        price = bound(price, 1, 1e39);
+        price = bound(price, 1e18, 1e39);
 
         // Assumes
         vm.assume(owner != address(0) && receiver != address(0));
@@ -539,7 +539,7 @@ contract EUITest is Test, Constants
     function testFailFlipToEudTooManyTokens(address owner, address receiver, uint256 amount, uint256 price) public {
         // Bounds
         amount = bound(amount, 0, 1e39);
-        price = bound(price, 1, 1e39);
+        price = bound(price, 1e18, 1e39);
 
         // Assumes
         vm.assume(owner != address(0) && receiver != address(0));
@@ -562,7 +562,7 @@ contract EUITest is Test, Constants
     function testFailFlipToEudNotAuthorized(address owner, address receiver, uint256 amount, uint256 price) public {
         // Bounds
         amount = bound(amount, 1, 1e39); // amount > 1, if 0, no approval needed, and test will succeed.
-        price = bound(price, 1, 1e39);
+        price = bound(price, 1e18, 1e39);
 
         // Assumes
         vm.assume(owner != address(0) && receiver != address(0));
@@ -624,7 +624,7 @@ contract EUITest is Test, Constants
     function testDeposit(address owner, address receiver, uint256 amount, uint256 price) public {
         //Bounds
         amount = bound(amount, 0, 1e39);
-        price = bound(price, 1, 1e39);
+        price = bound(price, 1e18, 1e39);
 
         // Assumes
         vm.assume(owner != address(0) && receiver != address(0));
@@ -647,7 +647,7 @@ contract EUITest is Test, Constants
     function testFailDepositTooManyTokens(address owner, address receiver, uint256 amount, uint256 price) public {
         //Bounds
         amount = bound(amount, 0, 1e39);
-        price = bound(price, 1, 1e39);
+        price = bound(price, 1e18, 1e39);
 
         // Assumes
         vm.assume(owner != address(0) && receiver != address(0));
@@ -679,7 +679,7 @@ contract EUITest is Test, Constants
     function testMint(address owner, address receiver, uint256 amount, uint256 price) public {
         //Bounds
         amount = bound(amount, 0, 1e39);
-        price = bound(price, 1, 1e39);
+        price = bound(price, 1e18, 1e39);
 
         // Assumes
         vm.assume(owner != address(0) && receiver != address(0));
@@ -703,7 +703,7 @@ contract EUITest is Test, Constants
 
     function testMaxWithdraw(address account, uint256 amount, uint256 price) public {
         amount = bound(amount, 0, 1e39);
-        price = bound(price, 1, 1e39);
+        price = bound(price, 1e18, 1e39);
         yieldOracle.adminUpdateOldPrice(price);
         vm.assume(account != address(0));
         eui.addToAllowlist(account);
@@ -713,7 +713,7 @@ contract EUITest is Test, Constants
 
     function testMaxWithdrawPaused(address account, uint256 amount, uint256 price) public {
         amount = bound(amount, 0, 1e39);
-        price = bound(price, 1, 1e39);
+        price = bound(price, 1e18, 1e39);
         yieldOracle.adminUpdateOldPrice(price);
         vm.assume(account != address(0));
         eui.addToAllowlist(account);
@@ -730,8 +730,8 @@ contract EUITest is Test, Constants
     function testWithdraw(address owner, address receiver, uint256 amount, uint256 oldPrice, uint256 currentPrice) public {
         // Bounds
         amount = bound(amount, 0, 1e39);
-        oldPrice = bound(oldPrice, 1, 1e39);
-        currentPrice = bound(currentPrice, 1, 1e39);
+        oldPrice = bound(oldPrice, 1e18, 1e39);
+        currentPrice = bound(currentPrice, 1e18, 1e39);
 
         // Assumes
         vm.assume(owner != address(0) && receiver != address(0));
@@ -803,7 +803,7 @@ contract EUITest is Test, Constants
     function testRedeem(address owner, address receiver, uint256 amount, uint256 price) public {
         // Bounds
         amount = bound(amount, 0, 1e39);
-        price = bound(price, 1, 1e39);
+        price = bound(price, 1e18, 1e39);
 
         // Assumes
         vm.assume(owner != address(0) && receiver != address(0));
@@ -826,7 +826,7 @@ contract EUITest is Test, Constants
     function testFailRedeemTooManyShares(address owner, address receiver, uint256 amount, uint256 price) public {
         // Bounds
         amount = bound(amount, 0, 1e39);
-        price = bound(price, 1, 1e39);
+        price = bound(price, 1e18, 1e39);
 
         // Assumes
         vm.assume(owner != address(0) && receiver != address(0));

@@ -589,7 +589,7 @@ contract EUI is
         if(paused()){
             return 0;
         }
-        return _convertToAssets(this.balanceOf(owner));
+        return _convertToAssets(balanceOf(owner));
     }
 
     /**
@@ -621,13 +621,9 @@ contract EUI is
         address receiver,
         address owner
     ) public returns (uint256) {
-        // require(
-        //     assets <= maxWithdraw(owner),
-        //     "ERC4626: withdraw more than max"
-        // );
-        uint256 sharesAmount = _convertToShares(assets);
-        require(this.transferFrom(owner, address(this), sharesAmount), "EUI transfer failed");
-        _burn(address(this), sharesAmount);
+        uint256 euiAmount = _convertToShares(assets);
+        require(this.transferFrom(owner, address(this), euiAmount), "EUI transfer failed");
+        _burn(address(this), euiAmount);
         eud.mint(receiver, assets);
         return assets;
     }
