@@ -73,6 +73,7 @@ contract YieldOracle is Pausable, AccessControl {
         uint256 newPrice
     ) external onlyRole(ORACLE_ROLE) whenNotPaused returns (bool) {
         require(block.timestamp >= lastUpdate + delay, "YieldOracle: price can only be updated once per hour");
+        require(newPrice >= 1e18, "YieldOracle: price must be greater than or equal to 1e18");
         require(newPrice-currentPrice <= maxPriceIncrease, "YieldOracle: price increase exceeds maximum allowed");
         lastUpdate = block.timestamp;
         oldPrice = currentPrice;
@@ -93,12 +94,14 @@ contract YieldOracle is Pausable, AccessControl {
     function adminUpdateCurrentPrice(
         uint256 price
     ) external onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused returns (bool) {
+        require(price >= 1e18, "YieldOracle: price must be greater than or equal to 1e18");
         currentPrice = price;
         return true;
     }
     function adminUpdateOldPrice(
         uint256 price
     ) external onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused returns (bool) {
+        require(price >= 1e18, "YieldOracle: price must be greater than or equal to 1e18");
         oldPrice = price;
         return true;
     }

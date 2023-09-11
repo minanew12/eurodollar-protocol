@@ -5,12 +5,12 @@ pragma solidity ^0.8.13;
 
 import {Test} from "forge-std/Test.sol";
 import {YieldOracle} from "../src/YieldOracle.sol";
+import {Constants} from "./Constants.sol";
 
-contract YieldOracleTest is Test
+contract YieldOracleTest is Test, Constants
 {
 
     YieldOracle public yieldOracle;
-    bytes32 DEFAULT_ADMIN_ROLE = 0x00;
 
     function setUp() public {
         yieldOracle = new YieldOracle();
@@ -24,14 +24,14 @@ contract YieldOracleTest is Test
     }
 
     function testPause(address pauser) public {
-        yieldOracle.grantRole(keccak256("PAUSE_ROLE"), pauser);
+        yieldOracle.grantRole(PAUSE_ROLE, pauser);
         vm.prank(pauser);
         yieldOracle.pause();
         assertEq(yieldOracle.paused(), true);
     }
 
     function testUnpause(address pauser) public {
-        yieldOracle.grantRole(keccak256("PAUSE_ROLE"), pauser);
+        yieldOracle.grantRole(PAUSE_ROLE, pauser);
         vm.prank(pauser);
         yieldOracle.pause();
         assertEq(yieldOracle.paused(), true);
@@ -41,25 +41,25 @@ contract YieldOracleTest is Test
     }
 
     function testGrantPauseRole(address account) public {
-        yieldOracle.grantRole(keccak256("PAUSE_ROLE"), account);
-        assert(yieldOracle.hasRole(keccak256("PAUSE_ROLE"), account));
+        yieldOracle.grantRole(PAUSE_ROLE, account);
+        assert(yieldOracle.hasRole(PAUSE_ROLE, account));
     }
 
     function testGrantOracleRole(address account) public {
-        yieldOracle.grantRole(keccak256("ORACLE_ROLE"), account);
-        assert(yieldOracle.hasRole(keccak256("ORACLE_ROLE"), account));
+        yieldOracle.grantRole(ORACLE_ROLE, account);
+        assert(yieldOracle.hasRole(ORACLE_ROLE, account));
     }
 
     function testFailUnauthorizedGrantPauseRole(address account) public {
         vm.assume(account != address(this));
         vm.prank(account);
-        yieldOracle.grantRole(keccak256("PAUSE_ROLE"), account);
+        yieldOracle.grantRole(PAUSE_ROLE, account);
     }
 
     function testFailUnauthorizedGrantOracleRole(address account) public {
         vm.assume(account != address(this));
         vm.prank(account);
-        yieldOracle.grantRole(keccak256("ORACLE_ROLE"), account);
+        yieldOracle.grantRole(ORACLE_ROLE, account);
     }
 
     function testSetMaxPriceIncrease(uint256 amount) public {
@@ -75,7 +75,7 @@ contract YieldOracleTest is Test
     }
 
     function testUpdatePrice(address oracle) public {
-        yieldOracle.grantRole(keccak256("ORACLE_ROLE"), oracle);
+        yieldOracle.grantRole(ORACLE_ROLE, oracle);
         vm.warp(3601); // roll forward 1 hour + 1 second to update price
         vm.prank(oracle);
         yieldOracle.updatePrice(110e16);
@@ -92,16 +92,34 @@ contract YieldOracleTest is Test
     }
 
     function testFailNotEnoughTimeBetweenPriceUpdates(address oracle) public {
-        yieldOracle.grantRole(keccak256("ORACLE_ROLE"), oracle);
+        yieldOracle.grantRole(ORACLE_ROLE, oracle);
         vm.prank(oracle);
         yieldOracle.updatePrice(110e16);
     }
 
     function testFailPriceUpdateAboveLimit(address oracle) public {
-        yieldOracle.grantRole(keccak256("ORACLE_ROLE"), oracle);
+        yieldOracle.grantRole(ORACLE_ROLE, oracle);
         vm.warp(3601); // roll forward 1 hour + 1 second to update price
         vm.prank(oracle);
         yieldOracle.updatePrice(12e17);
+    }
+
+    function testFailPriceUpdateBelowLimit(address oracle, uint256 price) public {
+        price = bound(price, 0, 99999999999999999); // 17 decimals
+        yieldOracle.grantRole(ORACLE_ROLE, oracle);
+        vm.warp(3601); // roll forward 1 hour + 1 second to update price
+        vm.prank(oracle);
+        yieldOracle.updatePrice(price);
+    }
+
+    function testFailAdminSetCurrentPriceBelowLimit(uint256 price) public {
+        price = bound(price, 0, 99999999999999999); // 17 decimals
+        yieldOracle.adminUpdateCurrentPrice(price);
+    }
+
+    function testFailAdminSetOldPriceBelowLimit(uint256 price) public {
+        price = bound(price, 0, 99999999999999999); // 17 decimals
+        yieldOracle.adminUpdateOldPrice(price);
     }
 
     function testFromEudtoEui() public {

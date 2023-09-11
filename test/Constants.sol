@@ -11,4 +11,5 @@ contract Constants {
     bytes32 public constant FREEZE_ROLE = keccak256("FREEZE_ROLE");
     bytes32 public constant BLOCK_ROLE = keccak256("BLOCK_ROLE");
     bytes32 public constant ALLOW_ROLE = keccak256("ALLOW_ROLE");
+    bytes32 public constant ORACLE_ROLE = keccak256("ORACLE_ROLE");
 }
