@@ -19,6 +19,8 @@ contract EUITest is Test, Constants
     using Math for uint256;
 
     EUI public eui;
+    EUI public euiImp;
+    EUD public eudImp;
     EUD public eud;
     YieldOracle public yieldOracle;
     bytes32 constant PERMIT_TYPEHASH =
@@ -27,8 +29,10 @@ contract EUITest is Test, Constants
 
     function setUp() public {
         // Setup EUD
-        eud = new EUD();
-        eud.initialize();
+        eudImp = new EUD();
+        ERC1967Proxy eudProxy = new ERC1967Proxy(address(eudImp), abi.encodeWithSelector(EUD(address(0)).initialize.selector));
+        //eud.initialize();
+        eud = EUD(address(eudProxy));
 
         // Setup YieldOracle
         yieldOracle = new YieldOracle();
@@ -36,9 +40,10 @@ contract EUITest is Test, Constants
         yieldOracle.adminUpdateOldPrice(1e18);
 
         // Setup EUI
-        eui = new EUI();
-        eui.initialize(address(eud), address(yieldOracle));
-
+        euiImp = new EUI();
+        //eui.initialize(address(eud), address(yieldOracle));
+        ERC1967Proxy euiProxy = new ERC1967Proxy(address(euiImp), abi.encodeWithSelector(EUI(address(0)).initialize.selector, address(eud), address(yieldOracle)));
+        eui = EUI(address(euiProxy));
         // Grant Roles
         eud.grantRole(MINT_ROLE, address(this));
         eud.grantRole(MINT_ROLE, address(eui));
@@ -54,8 +59,6 @@ contract EUITest is Test, Constants
     }
 
     function testInitialize() public {
-        EUI eui = new EUI();
-        eui.initialize(address(eud), address(yieldOracle));
         assertEq(eui.hasRole(0x00, address(this)), true);
         assertEq(eui.symbol(), "EUI");
         assertEq(eui.name(), "EuroDollar Invest");
@@ -583,9 +586,13 @@ contract EUITest is Test, Constants
     }
 
     function testSetYieldOracle(address newYieldOracle) public {
-        eui.grantRole(keccak256("ADMIN_ROLE"), address(this));
         eui.setYieldOracle(newYieldOracle);
         assertEq(address(eui.yieldOracle()), newYieldOracle);
+    }
+
+    function testSetEud(address newEud) public {
+        eui.setEud(newEud);
+        assertEq(address(eui.eud()), newEud);
     }
 
     function testFailSetYieldOracleUnauthorized(address newYieldOracle) public {

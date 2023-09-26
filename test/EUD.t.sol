@@ -10,14 +10,17 @@ import {Constants} from "./Constants.sol";
 
 contract EUDTest is Test, Constants
 {
+    EUD public eudImp;
     EUD public eud;
 
     bytes32 constant PERMIT_TYPEHASH =
         keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
 
     function setUp() public {
-        eud = new EUD();
-        eud.initialize();
+        eudImp = new EUD();
+        ERC1967Proxy eudProxy = new ERC1967Proxy(address(eudImp), abi.encodeWithSelector(EUD(address(0)).initialize.selector));
+        //eud.initialize();
+        eud = EUD(address(eudProxy));
         eud.grantRole(MINT_ROLE, address(this));
         eud.grantRole(BURN_ROLE, address(this));
         eud.grantRole(BLOCK_ROLE, address(this));
@@ -27,12 +30,10 @@ contract EUDTest is Test, Constants
     }
 
     function testInitialize() public {
-        EUD eudNew = new EUD();
-        eudNew.initialize();
-        assertEq(eudNew.hasRole(0x00, address(this)), true);
-        assertEq(eudNew.symbol(), "EUD");
-        assertEq(eudNew.name(), "EuroDollar");
-        assertEq(eudNew.decimals(), 18);
+        assertEq(eud.hasRole(0x00, address(this)), true);
+        assertEq(eud.symbol(), "EUD");
+        assertEq(eud.name(), "EuroDollar");
+        assertEq(eud.decimals(), 18);
     }
 
     function testMintEud(uint256 amount) public {
@@ -393,9 +394,12 @@ contract EUDTest is Test, Constants
 
     //TODO: Fix this test.
     function testAuthorizeUpgrade(address newImplementation) public {
-        EUD eudNew = new EUD();
-        ERC1967Proxy proxy = new ERC1967Proxy(address(eudNew), abi.encodeWithSelector(EUD(address(0)).initialize.selector));
-        address(proxy).call(abi.encodeWithSignature("grantRole(bytes32,address)", DEFAULT_ADMIN_ROLE, address(this)));
-        address(proxy).call(abi.encodeWithSignature("upgradeTo(address)", DEFAULT_ADMIN_ROLE, newImplementation));
+        EUD newEud = new EUD();
+        eud.upgradeTo(address(newEud));
+        address(eud).call(abi.encodeWithSelector(EUD(address(0)).initialize.selector));
+        assertEq(eud.hasRole(0x00, address(this)), true);
+        assertEq(eud.symbol(), "EUD");
+        assertEq(eud.name(), "EuroDollar");
+        assertEq(eud.decimals(), 18);
     }
 }

@@ -51,7 +51,7 @@ contract EUD is
      * @notice Only essential setup should be done within this constructor.
      */
     constructor() {
-        // _disableInitializers(); // Enable for deployment, disabled for testing.
+        _disableInitializers(); // Enable for deployment, disabled for testing.
     }
 
     /**
