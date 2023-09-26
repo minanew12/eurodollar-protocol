@@ -74,7 +74,7 @@ contract EUI is
      * @notice Only essential setup should be done within this constructor.
      */
     constructor() {
-        //_disableInitializers(); enable for deployment, disabled for testing
+        _disableInitializers(); //enable for deployment, disabled for testing
     }
 
     /**
@@ -100,6 +100,10 @@ contract EUI is
 
     function setYieldOracle(address yieldOracleAddress) external onlyRole(DEFAULT_ADMIN_ROLE) {
         yieldOracle = IYieldOracle(yieldOracleAddress);
+    }
+
+    function setEud(address eudAddress) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        eud = IEUD(eudAddress);
     }
 
     // ERC20 Pausable
