@@ -18,7 +18,10 @@ contract EUDTest is Test, Constants
 
     function setUp() public {
         eudImp = new EUD();
-        ERC1967Proxy eudProxy = new ERC1967Proxy(address(eudImp), abi.encodeWithSelector(EUD(address(0)).initialize.selector));
+        ERC1967Proxy eudProxy = new ERC1967Proxy(
+            address(eudImp), 
+            abi.encodeCall(EUD.initialize, ())
+        );
         //eud.initialize();
         eud = EUD(address(eudProxy));
         eud.grantRole(MINT_ROLE, address(this));
@@ -396,7 +399,7 @@ contract EUDTest is Test, Constants
     function testAuthorizeUpgrade() public {
         EUD newEud = new EUD();
         eud.upgradeTo(address(newEud));
-        address(eud).call(abi.encodeWithSelector(EUD(address(0)).initialize.selector));
+        address(eud).call(abi.encodeCall(EUD.initialize, ()));
         assertEq(eud.hasRole(0x00, address(this)), true);
         assertEq(eud.symbol(), "EUD");
         assertEq(eud.name(), "EuroDollar");

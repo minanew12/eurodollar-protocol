@@ -25,14 +25,14 @@ contract Deploy is Script {
         EUD eud = new EUD();
         console.log("EUD address:");
         console.log(address(eud));
-        ERC1967Proxy eudProxy = new ERC1967Proxy(address(eud), abi.encodeWithSelector(EUD(address(0)).initialize.selector));
+        ERC1967Proxy eudProxy = new ERC1967Proxy(address(eud), abi.encodeCall(EUD.initialize, ()));
         //address(eudProxy).call(abi.encodeWithSignature("grantRole(bytes32,address)", DEFAULT_ADMIN_ROLE, admin));
         console.log("EUDProxy address:");
         console.log(address(eudProxy));
         
         EUI eui = new EUI();
         console.log("EUI address:");
-        ERC1967Proxy euiproxy = new ERC1967Proxy(address(eui), abi.encodeWithSelector(EUI(address(0)).initialize.selector, address(eudProxy), address(oracle)));
+        ERC1967Proxy euiproxy = new ERC1967Proxy(address(eui), abi.encodeCall(EUI.initialize, (address(eudProxy), address(oracle))));
         console.log("EUIProxy address:");
         console.log(address(euiproxy));
         vm.stopBroadcast();

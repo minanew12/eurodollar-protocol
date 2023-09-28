@@ -30,7 +30,10 @@ contract EUITest is Test, Constants
     function setUp() public {
         // Setup EUD
         eudImp = new EUD();
-        ERC1967Proxy eudProxy = new ERC1967Proxy(address(eudImp), abi.encodeWithSelector(EUD(address(0)).initialize.selector));
+        ERC1967Proxy eudProxy = new ERC1967Proxy(
+            address(eudImp), 
+            abi.encodeCall(EUD.initialize, ())
+        );
         //eud.initialize();
         eud = EUD(address(eudProxy));
 
@@ -42,7 +45,10 @@ contract EUITest is Test, Constants
         // Setup EUI
         euiImp = new EUI();
         //eui.initialize(address(eud), address(yieldOracle));
-        ERC1967Proxy euiProxy = new ERC1967Proxy(address(euiImp), abi.encodeWithSelector(EUI(address(0)).initialize.selector, address(eud), address(yieldOracle)));
+        ERC1967Proxy euiProxy = new ERC1967Proxy(
+            address(euiImp), 
+            abi.encodeCall(EUI.initialize, (address(eud), address(yieldOracle)))
+        );
         eui = EUI(address(euiProxy));
         // Grant Roles
         eud.grantRole(MINT_ROLE, address(this));
@@ -444,7 +450,7 @@ contract EUITest is Test, Constants
     function testAuthorizeUpgrade(address eudProxy, address oracle) public {
         EUI newEui = new EUI();
         eui.upgradeTo(address(newEui));
-        address(eui).call( abi.encodeWithSelector(EUI(address(0)).initialize.selector, address(eudProxy), address(oracle)));
+        address(eui).call( abi.encodeCall(EUI.initialize, (address(eudProxy), address(oracle))));
         assertEq(eui.hasRole(0x00, address(this)), true);
         assertEq(eui.symbol(), "EUI");
         assertEq(eui.name(), "EuroDollar Invest");
