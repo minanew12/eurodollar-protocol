@@ -29,7 +29,6 @@ contract EUI is
 {
     IYieldOracle public yieldOracle;
     IEUD public eud;
-    address public asset; // Asset: EUD
     
     mapping(address => uint256) public frozenBalances;
 
@@ -470,6 +469,9 @@ contract EUI is
 
 
     /// ---------- ERC4626 FUNCTIONS ---------- ///
+    function asset() external view returns (address) {
+        return address(eud);
+    }
     /**
      * @notice  This function provides the total assets currently held in the vault, which are calculated by converting the total supply of shares (EUI) into assets (EUD) using the current exchange rate.
      * @dev     Returns the total assets held in the vault, converted from the total supply of shares (EUI).

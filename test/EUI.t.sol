@@ -862,4 +862,8 @@ contract EUITest is Test, Constants
         vm.stopPrank();
         assertEq(eud.balanceOf(receiver), amount.mulDiv(price, 1e18, Math.Rounding.Down));    
     }
+
+    function invariant_assetIsEud() external {
+        assertEq(eui.asset(), address(eui.eud()));
+    }
 }
