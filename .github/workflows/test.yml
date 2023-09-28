@@ -34,3 +34,7 @@ jobs:
         run: |
           forge test -vvv
         id: test
+
+      - name: Run Slither static analyzer
+        uses: crytic/slither-action@v0.3.0
+
