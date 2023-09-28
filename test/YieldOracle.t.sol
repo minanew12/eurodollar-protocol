@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // SPDX-FileCopyrightText: © 2023 Rhinefield Technologies Limited
 
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.21;
 
 import {Test} from "forge-std/Test.sol";
 import {YieldOracle} from "../src/YieldOracle.sol";

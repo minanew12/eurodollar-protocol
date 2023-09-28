@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // SPDX-FileCopyrightText: © 2023 Rhinefield Technologies Limited
 
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.21;
 
 import "oz-up/security/PausableUpgradeable.sol";
 import "oz-up/token/ERC20/extensions/ERC20PermitUpgradeable.sol";

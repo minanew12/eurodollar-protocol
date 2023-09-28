@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.21;
 
 interface IEUD {
     function decimals() external view returns (uint8);

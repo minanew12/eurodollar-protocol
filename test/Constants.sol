@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // SPDX-FileCopyrightText: © 2023 Rhinefield Technologies Limited
 
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.21;
 
 contract Constants {
     bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;
