@@ -439,12 +439,16 @@ contract EUITest is Test, Constants
         vm.warp(deadline);
         eui.permit(owner, receiver, amount, deadline, v, r, s);
     }
-    //TODO fix this test
-    function testAuthorizeUpgrade(address newImplementation) public {
-        EUI eui = new EUI();
-        ERC1967Proxy proxy = new ERC1967Proxy(address(eui), abi.encodeWithSelector(EUI(address(0)).initialize.selector, eud, yieldOracle));
-        address(proxy).call(abi.encodeWithSignature("grantRole(bytes32,address)", DEFAULT_ADMIN_ROLE, address(this)));
-        address(proxy).call(abi.encodeWithSignature("upgradeTo(address)", DEFAULT_ADMIN_ROLE, newImplementation));
+
+    // TODO: add test of new function in upgraded contract to ensure upgrade is succesful.
+    function testAuthorizeUpgrade(address eudProxy, address oracle) public {
+        EUI newEui = new EUI();
+        eui.upgradeTo(address(newEui));
+        address(eui).call( abi.encodeWithSelector(EUI(address(0)).initialize.selector, address(eudProxy), address(oracle)));
+        assertEq(eui.hasRole(0x00, address(this)), true);
+        assertEq(eui.symbol(), "EUI");
+        assertEq(eui.name(), "EuroDollar Invest");
+        assertEq(eui.decimals(), 18);
     }
 
     function testFlipToEui(address owner, address receiver, uint256 amount, uint256 price) public {
