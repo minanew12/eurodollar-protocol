@@ -20,7 +20,6 @@ import "../interfaces/IEUD.sol";
  */
 contract EUI is
     Initializable,
-    ERC20Upgradeable,
     PausableUpgradeable,
     ERC20PermitUpgradeable,
     UUPSUpgradeable,
