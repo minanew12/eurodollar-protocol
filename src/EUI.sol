@@ -591,6 +591,7 @@ contract EUI is
         // require(shares <= maxMint(receiver), "ERC4626: mint more than max"); THIS IS UINT256_MAX NO REASON TO CHECK
         uint256 assetAmount = _convertToAssets(shares);
         uint256 assets = flipToEUI(msg.sender, receiver, assetAmount);
+        emit Deposit(msg.sender, receiver, assets, shares);
         return assets;
     }
 
@@ -643,6 +644,7 @@ contract EUI is
         require(this.transferFrom(owner, address(this), euiAmount), "EUI transfer failed");
         _burn(address(this), euiAmount);
         eud.mint(receiver, assets);
+        emit Withdraw(msg.sender, receiver, owner, assets, euiAmount);
         return assets;
     }
 
@@ -691,7 +693,9 @@ contract EUI is
         address owner
     ) public returns (uint256) {
         require(shares <= maxRedeem(owner), "ERC4626: redeem more than max");
-        return flipToEUD(owner, receiver, shares);
+        uint256 assets = flipToEUD(owner, receiver, shares);
+        emit Withdraw(msg.sender, receiver, owner, assets, shares);
+        return assets;
     }
 
     /**
