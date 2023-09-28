@@ -14,8 +14,6 @@ import "oz/utils/math/Math.sol";
  * @dev     The oracle allows price updates based on the `ORACLE_ROLE` and pausing functionality using the `PAUSE_ROLE`.
  */
 contract YieldOracle is Pausable, AccessControl {
-    using Math for uint256;
-
     uint256 public oldPrice;
     uint256 public currentPrice;
     uint256 public maxPriceIncrease;
@@ -114,10 +112,10 @@ contract YieldOracle is Pausable, AccessControl {
      */
     function fromEudToEui(uint256 eudAmount) public view returns (uint256) {
         return
-            eudAmount.mulDiv(
+            Math.mulDiv(
+                eudAmount,
                 10 ** 18,
-                currentPrice,
-                Math.Rounding.Down
+                currentPrice
             );
     }
 
@@ -129,10 +127,10 @@ contract YieldOracle is Pausable, AccessControl {
      */
     function fromEuiToEud(uint256 euiAmount) public view returns (uint256) {
         return
-            euiAmount.mulDiv(
+            Math.mulDiv(
+                euiAmount,
                 oldPrice,
-                10 ** 18,
-                Math.Rounding.Down
+                10 ** 18
             );
     }
 }
