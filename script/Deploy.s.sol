@@ -11,17 +11,14 @@ import {YieldOracle} from "../src/YieldOracle.sol";
 import {ERC1967Proxy} from "oz/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract Deploy is Script {
-
-    bytes32 constant DEFAULT_ADMIN_ROLE = 0x00;
-
     function run() external returns (address, address, address) {
         vm.startBroadcast();
         YieldOracle oracle = new YieldOracle();
-        oracle.adminUpdateCurrentPrice(1e18);
-        oracle.adminUpdateOldPrice(1e18);
+        require(oracle.adminUpdateCurrentPrice(1e18));
+        require(oracle.adminUpdateOldPrice(1e18));
         console.log("Oracle address:");
         console.log(address(oracle));
-        
+
         EUD eud = new EUD();
         console.log("EUD address:");
         console.log(address(eud));
@@ -29,7 +26,7 @@ contract Deploy is Script {
         //address(eudProxy).call(abi.encodeWithSignature("grantRole(bytes32,address)", DEFAULT_ADMIN_ROLE, admin));
         console.log("EUDProxy address:");
         console.log(address(eudProxy));
-        
+
         EUI eui = new EUI();
         console.log("EUI address:");
         ERC1967Proxy euiproxy = new ERC1967Proxy(address(eui), abi.encodeCall(EUI.initialize, (address(eudProxy), address(oracle))));
