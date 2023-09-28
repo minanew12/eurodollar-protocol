@@ -392,8 +392,8 @@ contract EUDTest is Test, Constants
         eud.permit(owner, receiver, amount, deadline, v, r, s);
     }
 
-    //TODO: Fix this test.
-    function testAuthorizeUpgrade(address newImplementation) public {
+    // TODO: add test of new function in upgraded contract to ensure upgrade is succesful.
+    function testAuthorizeUpgrade() public {
         EUD newEud = new EUD();
         eud.upgradeTo(address(newEud));
         address(eud).call(abi.encodeWithSelector(EUD(address(0)).initialize.selector));
