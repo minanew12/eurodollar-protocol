@@ -510,12 +510,11 @@ contract EUI is
      * @notice  This function returns the maximum amount of assets (EUD) that can be deposited by the specified receiver.
      * @notice  The maximum deposit amount is equal to the maximum value representable by uint256, allowing for a very large deposit if needed.
      * @dev     Returns the maximum amount of assets (EUD) that can be deposited by the specified receiver.
-     * @param   receiver  The address of the receiver for whom the maximum deposit amount is calculated.
      * @return  uint256  The maximum amount of assets (EUD) that can be deposited by the specified receiver, which is equal to the maximum value representable by uint256.
      */
     function maxDeposit(
-        address receiver
-    ) public view returns (uint256) {
+        address
+    ) public pure returns (uint256) {
         return type(uint256).max;
     }
 
@@ -559,10 +558,9 @@ contract EUI is
      * @notice  This function allows the user to determine the maximum amount of assets (EUD) that can be minted as shares (EUI) for the specified receiver.
      * @notice  The maximum mintable amount is equal to the maximum possible value of a uint256 type.
      * @dev     Returns the maximum amount of assets (EUD) that can be minted as shares (EUI) for the specified receiver.
-     * @param   receiver  receiver The address for which to calculate the maximum mintable amount of assets (EUD).
      * @return  uint256  The maximum amount of assets (EUD) that can be minted as shares (EUI) for the specified receiver.
      */
-    function maxMint(address receiver) public view returns (uint256) {
+    function maxMint(address) public pure returns (uint256) {
         return type(uint256).max;
     }
 
@@ -693,7 +691,7 @@ contract EUI is
         address owner
     ) public returns (uint256) {
         require(shares <= maxRedeem(owner), "ERC4626: redeem more than max");
-        flipToEUD(owner, receiver, shares);
+        return flipToEUD(owner, receiver, shares);
     }
 
     /**
