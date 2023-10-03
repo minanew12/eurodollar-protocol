@@ -239,13 +239,17 @@ contract EUD is
 
     function freeze(address from, address to, uint256 amount) external onlyRole(FREEZE_ROLE) returns (bool) {
         _transfer(from, to, amount);
-        frozenBalances[from] += amount;
+        unchecked {
+            frozenBalances[from] += amount;
+        }
         return true;
     }
 
     function release(address from, address to, uint256 amount) external onlyRole(FREEZE_ROLE) returns (bool) {
         require(frozenBalances[to] >= amount, "Release amount exceeds balance");
-        frozenBalances[to] -= amount;
+        unchecked {
+            frozenBalances[to] -= amount;
+        }
         _transfer(from, to, amount);
         return true;
     }
