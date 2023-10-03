@@ -40,12 +40,12 @@ contract YieldOracleTest is Test, Constants {
 
     function testGrantPauseRole(address account) public {
         yieldOracle.grantRole(PAUSE_ROLE, account);
-        assert(yieldOracle.hasRole(PAUSE_ROLE, account));
+        assertTrue(yieldOracle.hasRole(yieldOracle.PAUSE_ROLE(), account));
     }
 
     function testGrantOracleRole(address account) public {
         yieldOracle.grantRole(ORACLE_ROLE, account);
-        assert(yieldOracle.hasRole(ORACLE_ROLE, account));
+        assertTrue(yieldOracle.hasRole(yieldOracle.ORACLE_ROLE(), account));
     }
 
     function testFailUnauthorizedGrantPauseRole(address account) public {

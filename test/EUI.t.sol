@@ -91,22 +91,22 @@ contract EUITest is Test, Constants {
 
     function testGrantMintRole(address account) public {
         eui.grantRole(MINT_ROLE, account);
-        assert(eui.hasRole(MINT_ROLE, account));
+        assertTrue(eui.hasRole(MINT_ROLE, account));
     }
 
     function testGrantBurnRole(address account) public {
         eui.grantRole(BURN_ROLE, account);
-        assert(eui.hasRole(BURN_ROLE, account));
+        assertTrue(eui.hasRole(BURN_ROLE, account));
     }
 
     function testGrantPauseRole(address account) public {
         eui.grantRole(PAUSE_ROLE, account);
-        assert(eui.hasRole(PAUSE_ROLE, account));
+        assertTrue(eui.hasRole(PAUSE_ROLE, account));
     }
 
     function testGrantAdminRole(address account) public {
         eui.grantRole(DEFAULT_ADMIN_ROLE, account);
-        assert(eui.hasRole(DEFAULT_ADMIN_ROLE, account));
+        assertTrue(eui.hasRole(DEFAULT_ADMIN_ROLE, account));
     }
 
     function testFailUnauthorizedGrantRoles(address account) public {
@@ -192,7 +192,7 @@ contract EUITest is Test, Constants {
     function testAddToAllowlist(address account) public {
         vm.assume(account != address(this));
         eui.addToAllowlist(account);
-        assert(eui.allowlist(account));
+        assertTrue(eui.allowlist(account));
     }
 
     function testAddManyToAllowlist(address account1, address account2, address account3) public {
@@ -202,15 +202,15 @@ contract EUITest is Test, Constants {
         accounts[2] = account3;
         eui.addManyToAllowlist(accounts);
         for (uint256 i = 0; i < accounts.length; i++) {
-            assert(eui.allowlist(accounts[i]));
+            assertTrue(eui.allowlist(accounts[i]));
         }
     }
 
     function testRemoveFromAllowlist(address account) public {
         eui.addToAllowlist(account);
-        assert(eui.allowlist(account));
+        assertTrue(eui.allowlist(account));
         eui.removeFromAllowlist(account);
-        assert(!eui.allowlist(account));
+        assertTrue(!eui.allowlist(account));
     }
 
     function testRemoveManyFromAllowlist(address account1, address account2, address account3) public {
@@ -220,11 +220,11 @@ contract EUITest is Test, Constants {
         accounts[2] = account3;
         eui.addManyToAllowlist(accounts);
         for (uint256 i = 0; i < accounts.length; i++) {
-            assert(eui.allowlist(accounts[i]));
+            assertTrue(eui.allowlist(accounts[i]));
         }
         eui.removeManyFromAllowlist(accounts);
         for (uint256 i = 0; i < accounts.length; i++) {
-            assert(!eui.allowlist(accounts[i]));
+            assertTrue(!eui.allowlist(accounts[i]));
         }
     }
 
@@ -232,15 +232,15 @@ contract EUITest is Test, Constants {
         vm.assume(account != address(this));
         vm.prank(account);
         eui.addToAllowlist(account);
-        assert(eui.allowlist(account));
+        assertTrue(eui.allowlist(account));
     }
 
     function testFailRemoveFromAllowlistNotAuthorized(address account) public {
         eui.addToAllowlist(account);
-        assert(eui.allowlist(account));
+        assertTrue(eui.allowlist(account));
         vm.prank(address(0));
         eui.removeFromAllowlist(account);
-        assert(!eui.allowlist(account));
+        assertTrue(!eui.allowlist(account));
     }
 
     function testFreeze(address account1, address account2, uint256 amount) public {

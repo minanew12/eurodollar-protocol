@@ -31,7 +31,7 @@ contract EUDTest is Test, Constants {
     }
 
     function testInitialize() public {
-        assertEq(eud.hasRole(0x00, address(this)), true);
+        assertTrue(eud.hasRole(0x00, address(this)));
         assertEq(eud.symbol(), "EUD");
         assertEq(eud.name(), "EuroDollar");
         assertEq(eud.decimals(), 18);
@@ -64,29 +64,29 @@ contract EUDTest is Test, Constants {
 
     function testGrantMintRole(address account) public {
         eud.grantRole(MINT_ROLE, account);
-        assert(eud.hasRole(MINT_ROLE, account));
+        assertTrue(eud.hasRole(MINT_ROLE, account));
     }
 
     function testGrantBurnRole(address account) public {
         eud.grantRole(BURN_ROLE, account);
-        assert(eud.hasRole(BURN_ROLE, account));
+        assertTrue(eud.hasRole(BURN_ROLE, account));
     }
 
     function testGrantPauseRole(address account) public {
         eud.grantRole(PAUSE_ROLE, account);
-        assert(eud.hasRole(PAUSE_ROLE, account));
+        assertTrue(eud.hasRole(PAUSE_ROLE, account));
     }
 
     function testGrantAdminRole(address account) public {
         eud.grantRole(DEFAULT_ADMIN_ROLE, account);
-        assert(eud.hasRole(DEFAULT_ADMIN_ROLE, account));
+        assertTrue(eud.hasRole(DEFAULT_ADMIN_ROLE, account));
     }
 
     function testPause(address pauser) public {
         eud.grantRole(PAUSE_ROLE, pauser);
         vm.prank(pauser);
         eud.pause();
-        assertEq(eud.paused(), true);
+        assertTrue(eud.paused());
     }
 
     function testFailUnauthorizedGrantRoles(address account) public {
@@ -129,7 +129,7 @@ contract EUDTest is Test, Constants {
         eud.grantRole(PAUSE_ROLE, pauser);
         vm.prank(pauser);
         eud.pause();
-        assertEq(eud.paused(), true);
+        assertTrue(eud.paused());
         vm.prank(pauser);
         eud.unpause();
         assertEq(eud.paused(), false);
@@ -162,7 +162,7 @@ contract EUDTest is Test, Constants {
 
     function testAddToBlocklist(address account) public {
         eud.addToBlocklist(account);
-        assert(eud.blocklist(account));
+        assertTrue(eud.blocklist(account));
     }
 
     function testAddManyToBlocklist(address account1, address account2, address account3) public {
@@ -172,15 +172,15 @@ contract EUDTest is Test, Constants {
         accounts[2] = account3;
         eud.addManyToBlocklist(accounts);
         for (uint256 i = 0; i < accounts.length; i++) {
-            assert(eud.blocklist(accounts[i]));
+            assertTrue(eud.blocklist(accounts[i]));
         }
     }
 
     function testRemoveFromBlocklist(address account) public {
         eud.addToBlocklist(account);
-        assert(eud.blocklist(account));
+        assertTrue(eud.blocklist(account));
         eud.removeFromBlocklist(account);
-        assert(!eud.blocklist(account));
+        assertTrue(!eud.blocklist(account));
     }
 
     function testRemoveManyFromBlocklist(address account1, address account2, address account3) public {
@@ -190,11 +190,11 @@ contract EUDTest is Test, Constants {
         accounts[2] = account3;
         eud.addManyToBlocklist(accounts);
         for (uint256 i = 0; i < accounts.length; i++) {
-            assert(eud.blocklist(accounts[i]));
+            assertTrue(eud.blocklist(accounts[i]));
         }
         eud.removeManyFromBlocklist(accounts);
         for (uint256 i = 0; i < accounts.length; i++) {
-            assert(!eud.blocklist(accounts[i]));
+            assertTrue(!eud.blocklist(accounts[i]));
         }
     }
 
@@ -202,16 +202,16 @@ contract EUDTest is Test, Constants {
         vm.assume(account != address(this));
         vm.prank(account);
         eud.addToBlocklist(account);
-        assert(eud.blocklist(account));
+        assertTrue(eud.blocklist(account));
     }
 
     function testFailRemoveFromBlocklistNotAuthorized(address account) public {
         vm.assume(account != address(this));
         eud.addToBlocklist(account);
-        assert(eud.blocklist(account));
+        assertTrue(eud.blocklist(account));
         vm.prank(account);
         eud.removeFromBlocklist(account);
-        assert(!eud.blocklist(account));
+        assertTrue(!eud.blocklist(account));
     }
 
     function testFreeze(address account1, address account2, uint256 amount) public {
