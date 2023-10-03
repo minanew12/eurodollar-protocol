@@ -78,13 +78,13 @@ contract YieldOracle is Pausable, AccessControl {
         return true;
     }
 
-    function setMaxPriceIncrease(uint256 _maxPriceIncrease) external onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
-        maxPriceIncrease = _maxPriceIncrease;
+    function setMaxPriceIncrease(uint256 maxPriceIncrease_) external onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
+        maxPriceIncrease = maxPriceIncrease_;
         return true;
     }
 
-    function setDelay(uint256 _delay) external onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
-        delay = _delay;
+    function setDelay(uint256 delay_) external onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
+        delay = delay_;
         return true;
     }
 

@@ -50,8 +50,8 @@ contract EUI is
     }
 
     // Events
-    event flippedToEUD(address indexed account, uint256 euiAmount, uint256 eudAmount);
-    event flippedToEUI(address indexed account, uint256 eudAmount, uint256 euiAmount);
+    event FlippedToEUD(address indexed account, uint256 euiAmount, uint256 eudAmount);
+    event FlippedToEUI(address indexed account, uint256 eudAmount, uint256 euiAmount);
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     /**
@@ -382,7 +382,7 @@ contract EUI is
         require(eud.transferFrom(owner, address(this), amount), "EUD transfer failed");
         eud.burn(address(this), amount);
         _mint(receiver, euiMintAmount);
-        emit flippedToEUI(msg.sender, amount, euiMintAmount);
+        emit FlippedToEUI(msg.sender, amount, euiMintAmount);
         return euiMintAmount;
     }
 
@@ -399,7 +399,7 @@ contract EUI is
         require(this.transferFrom(owner, address(this), amount), "EUI transfer failed");
         _burn(address(this), amount);
         eud.mint(receiver, eudMintAmount);
-        emit flippedToEUD(msg.sender, amount, eudMintAmount);
+        emit FlippedToEUD(msg.sender, amount, eudMintAmount);
         return eudMintAmount;
     }
 
