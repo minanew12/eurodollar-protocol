@@ -39,7 +39,7 @@ contract EUD is
      * @param   account  The address to be checked for blocklisting.
      */
     modifier notBlocked(address account) {
-        require(blocklist[account] == false, "Account is blocked");
+        if (account != address(0)) require(blocklist[account] == false, "Account is blocked");
         _;
     }
 
@@ -98,7 +98,7 @@ contract EUD is
      * @param   to  The address to receive the newly minted tokens.
      * @param   amount  The amount of tokens to mint and add to the account.
      */
-    function mint(address to, uint256 amount) public onlyRole(MINT_ROLE) notBlocked(to) {
+    function mint(address to, uint256 amount) public onlyRole(MINT_ROLE) {
         _mint(to, amount);
     }
 
@@ -132,110 +132,9 @@ contract EUD is
         internal
         override
         whenNotPaused
-        notBlocked(msg.sender)
+        notBlocked(from)
         notBlocked(to)
-    {
-        super._beforeTokenTransfer(from, to, amount);
-    }
-
-    /**
-     * @notice  This function overrides the ERC20 `approve` function.
-     * @notice  It ensures that approval is not allowed for blocklisted accounts.
-     * @notice  The function returns `true` if the approval is successful; otherwise, it reverts with an error.
-     * @dev     Sets the allowance for a spender to spend tokens on behalf of the owner.
-     * @param   spender  The address of the spender being allowed to spend tokens.
-     * @param   amount  The maximum amount of tokens the spender is allowed to spend.
-     * @return  bool  A boolean value indicating whether the approval was successful.
-     */
-    function approve(
-        address spender,
-        uint256 amount
-    )
-        public
-        override
-        notBlocked(msg.sender)
-        notBlocked(spender)
-        returns (bool)
-    {
-        super.approve(spender, amount);
-        return true;
-    }
-
-    /**
-     * @notice  This function overrides the ERC20 `increaseAllowance` function.
-     * @notice  It ensures that increasing the allowance is not allowed for blocklisted accounts.
-     * @notice  The function returns `true` if the allowance increase is successful; otherwise, it reverts with an error.
-     * @dev     Increases the allowance for a spender to spend tokens on behalf of the owner.
-     * @param   spender  The address of the spender whose allowance is being increased.
-     * @param   addedValue  The additional amount of tokens the spender is allowed to spend.
-     * @return  bool  A boolean value indicating whether the allowance increase was successful.
-     */
-    function increaseAllowance(
-        address spender,
-        uint256 addedValue
-    )
-        public
-        override
-        notBlocked(msg.sender)
-        notBlocked(spender)
-        returns (bool)
-    {
-        super.increaseAllowance(spender, addedValue);
-        return true;
-    }
-
-    /**
-     * @notice  This function overrides the ERC20 `decreaseAllowance` function.
-     * @notice  It ensures that decreasing the allowance is not allowed for blocklisted accounts.
-     * @notice  The function returns `true` if the allowance decrease is successful; otherwise, it reverts with an error.
-     * @dev     Decreases the allowance for a spender to spend tokens on behalf of the owner.
-     * @param   spender  The address of the spender whose allowance is being decreased.
-     * @param   subtractedValue  The amount by which the spender's allowance will be decreased.
-     * @return  bool  A boolean value indicating whether the allowance decrease was successful.
-     */
-    function decreaseAllowance(
-        address spender,
-        uint256 subtractedValue
-    )
-        public
-        override
-        notBlocked(msg.sender)
-        notBlocked(spender)
-        returns (bool)
-    {
-        super.decreaseAllowance(spender, subtractedValue);
-        return true;
-    }
-
-    /**
-     * @notice  This function overrides the ERC20Permit `permit` function.
-     * @notice  It allows a spender to spend tokens on behalf of the owner using a permit signature.
-     * @notice  The function performs checks to ensure that the owner and spender are not blocklisted.
-     * @dev     Allows an approved spender to spend tokens on behalf of the owner using a permit signature.
-     * @param   owner  The address of the token owner.
-     * @param   spender  The address of the approved spender.
-     * @param   value  The amount of tokens the spender is allowed to spend.
-     * @param   deadline  The timestamp until which the permit is valid.
-     * @param   v  The recovery byte of the permit signature.
-     * @param   r  The first 32 bytes of the permit signature.
-     * @param   s  The second 32 bytes of the permit signature.
-     */
-    function permit(
-        address owner,
-        address spender,
-        uint256 value,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    )
-        public
-        override
-        notBlocked(owner)
-        notBlocked(spender)
-    {
-        super.permit(owner, spender, value, deadline, v, r, s);
-    }
+    {}
 
     function freeze(address from, address to, uint256 amount) external onlyRole(FREEZE_ROLE) returns (bool) {
         _transfer(from, to, amount);

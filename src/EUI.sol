@@ -44,8 +44,8 @@ contract EUI is
      * @dev     Modifier to check if the given account is allowed.
      * @param   account  The address to be checked for allowlisting.
      */
-    modifier allowed(address account) {
-        require(allowlist[account] == true, "Account is not on Allowlist");
+    modifier onlyAllowed(address account) {
+        if (account != address(0)) require(allowlist[account] == true, "Account is not on Allowlist");
         _;
     }
 
@@ -120,7 +120,7 @@ contract EUI is
      * @param   to  The address to receive the newly minted tokens.
      * @param   amount  The amount of tokens to mint and add to the account.
      */
-    function mintEUI(address to, uint256 amount) public onlyRole(MINT_ROLE) allowed(to) {
+    function mintEUI(address to, uint256 amount) public onlyRole(MINT_ROLE) {
         _mint(to, amount);
     }
 
@@ -146,126 +146,17 @@ contract EUI is
      * @param   to  The address to which tokens are transferred.
      * @param   amount  The amount of tokens being transferred.
      */
-    function _beforeTokenTransfer(address from, address to, uint256 amount) internal override whenNotPaused {
-        super._beforeTokenTransfer(from, to, amount);
-    }
-
-    /**
-     * @notice  This function overrides both ERC20Upgradeable `transfer` and IERC20Upgradeable `transfer` functions.
-     * @notice  It ensures that token transfers are allowed for allowed accounts and not allowed for blocklisted accounts.
-     * @notice  The function returns `true` if the transfer is successful; otherwise, it reverts with an error.
-     * @dev     Transfers a specific amount of tokens to the specified address.
-     * @param   to  The address to which tokens will be transferred.
-     * @param   amount  The amount of tokens to be transferred.
-     * @return  bool  A boolean value indicating whether the transfer was successful.
-     */
-    function transfer(
-        address to,
-        uint256 amount
-    )
-        public
-        override(ERC20Upgradeable, IERC20Upgradeable)
-        allowed(msg.sender)
-        allowed(to)
-        returns (bool)
-    {
-        super.transfer(to, amount);
-        return true;
-    }
-
-    /**
-     * @notice  This function overrides both ERC20Upgradeable `approve` and IERC20Upgradeable `approve` functions.
-     * @notice  It ensures that approval is allowed for allowed accounts and not allowed for blocklisted accounts.
-     * @notice  The function returns `true` if the approval is successful; otherwise, it reverts with an error.
-     * @dev     Sets the allowance for a spender to spend tokens on behalf of the owner.
-     * @param   spender  The address of the spender being allowed to spend tokens.
-     * @param   amount  The maximum amount of tokens the spender is allowed to spend.
-     * @return  bool  A boolean value indicating whether the approval was successful.
-     */
-    function approve(
-        address spender,
-        uint256 amount
-    )
-        public
-        override(ERC20Upgradeable, IERC20Upgradeable)
-        allowed(msg.sender)
-        allowed(spender)
-        returns (bool)
-    {
-        super.approve(spender, amount);
-        return true;
-    }
-
-    /**
-     * @notice  This function overrides both ERC20Upgradeable `transferFrom` and IERC20Upgradeable `transferFrom` functions.
-     * @notice  It ensures that token transfers are allowed for allowed accounts and not allowed for blocklisted accounts.
-     * @notice  The function returns `true` if the transfer is successful; otherwise, it reverts with an error.
-     * @dev     Transfers tokens from one address to another using the allowance mechanism.
-     * @param   from    The address from which tokens are transferred.
-     * @param   to      The address to which tokens are transferred.
-     * @param   amount  The amount of tokens to be transferred.
-     * @return  bool    A boolean value indicating whether the transfer was successful.
-     */
-    function transferFrom(
+    function _beforeTokenTransfer(
         address from,
         address to,
         uint256 amount
     )
-        public
-        override(ERC20Upgradeable, IERC20Upgradeable)
-        allowed(from)
-        allowed(to)
-        returns (bool)
-    {
-        super.transferFrom(from, to, amount);
-        return true;
-    }
-
-    /**
-     * @notice  This function overrides both ERC20Upgradeable `increaseAllowance` and IERC20Upgradeable `increaseAllowance` functions.
-     * @notice  It ensures that increasing the allowance is allowed for allowed accounts and not allowed for blocklisted accounts.
-     * @notice  The function returns `true` if the allowance increase is successful; otherwise, it reverts with an error.
-     * @dev     Increases the allowance for a spender to spend tokens on behalf of the owner.
-     * @param   spender The address of the spender whose allowance is being increased.
-     * @param   addedValue The additional amount of tokens the spender is allowed to spend.
-     * @return  bool A boolean value indicating whether the allowance increase was successful.
-     */
-    function increaseAllowance(
-        address spender,
-        uint256 addedValue
-    )
-        public
+        internal
         override
-        allowed(msg.sender)
-        allowed(spender)
-        returns (bool)
-    {
-        super.increaseAllowance(spender, addedValue);
-        return true;
-    }
-
-    /**
-     * @notice  This function overrides both ERC20Upgradeable `decreaseAllowance` and IERC20Upgradeable `decreaseAllowance` functions.
-     * @notice  It ensures that decreasing the allowance is allowed for allowed accounts and not allowed for blocklisted accounts.
-     * @notice  The function returns `true` if the allowance decrease is successful; otherwise, it reverts with an error.
-     * @dev     Decreases the allowance for a spender to spend tokens on behalf of the owner.
-     * @param   spender The address of the spender whose allowance is being decreased.
-     * @param   subtractedValue The amount by which the spender's allowance will be decreased.
-     * @return  bool    A boolean value indicating whether the allowance decrease was successful.
-     */
-    function decreaseAllowance(
-        address spender,
-        uint256 subtractedValue
-    )
-        public
-        override
-        allowed(msg.sender)
-        allowed(spender)
-        returns (bool)
-    {
-        super.decreaseAllowance(spender, subtractedValue);
-        return true;
-    }
+        whenNotPaused
+        onlyAllowed(from)
+        onlyAllowed(to)
+    {}
 
     // ERC1967
     /**
@@ -277,36 +168,6 @@ contract EUI is
      * @param   newImplementation  The address of the new implementation contract.
      */
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(DEFAULT_ADMIN_ROLE) {}
-
-    /**
-     * @notice  This function overrides the ERC20Permit `permit` function.
-     * @notice  It allows a spender to spend tokens on behalf of the owner using a permit signature.
-     * @notice  The function performs checks to ensure that the owner and spender are not blocklisted.
-     * @dev     Allows an approved spender to spend tokens on behalf of the owner using a permit signature.
-     * @param   owner  The address of the token owner.
-     * @param   spender  The address of the approved spender.
-     * @param   value  The amount of tokens the spender is allowed to spend.
-     * @param   deadline  The timestamp until which the permit is valid.
-     * @param   v  The recovery byte of the permit signature.
-     * @param   r  The first 32 bytes of the permit signature.
-     * @param   s  The second 32 bytes of the permit signature.
-     */
-    function permit(
-        address owner,
-        address spender,
-        uint256 value,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    )
-        public
-        override
-        allowed(owner)
-        allowed(spender)
-    {
-        super.permit(owner, spender, value, deadline, v, r, s);
-    }
 
     function freeze(address from, address to, uint256 amount) external onlyRole(FREEZE_ROLE) returns (bool) {
         _transfer(from, to, amount);
@@ -328,6 +189,7 @@ contract EUI is
     function reclaim(address from, address to, uint256 amount) external onlyRole(FREEZE_ROLE) returns (bool) {
         _burn(from, amount);
         _mint(to, amount);
+
         return true;
     }
 
