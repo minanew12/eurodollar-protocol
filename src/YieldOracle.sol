@@ -3,9 +3,9 @@
 
 pragma solidity ^0.8.21;
 
-import "oz/security/Pausable.sol";
-import "oz/access/AccessControl.sol";
-import "oz/utils/math/Math.sol";
+import {Pausable} from "oz/security/Pausable.sol";
+import {AccessControl} from "oz/access/AccessControl.sol";
+import {Math} from "oz/utils/math/Math.sol";
 
 /**
  * @author  Rhinefield Technologies Limited

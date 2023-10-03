@@ -4,7 +4,7 @@
 pragma solidity ^0.8.21;
 
 import {Script} from "forge-std/Script.sol";
-import "forge-std/console.sol";
+import {console} from "forge-std/console.sol";
 import {EUD} from "../src/EUD.sol";
 import {EUI} from "../src/EUI.sol";
 import {YieldOracle} from "../src/YieldOracle.sol";

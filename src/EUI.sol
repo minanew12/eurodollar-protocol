@@ -3,14 +3,14 @@
 
 pragma solidity ^0.8.21;
 
-import "oz-up/security/PausableUpgradeable.sol";
-import "oz-up/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
-import "oz-up/proxy/utils/Initializable.sol";
-import "oz-up/proxy/utils/UUPSUpgradeable.sol";
-import "oz-up/interfaces/IERC4626Upgradeable.sol";
-import "oz-up/access/AccessControlUpgradeable.sol";
-import "../interfaces/IYieldOracle.sol";
-import "../interfaces/IEUD.sol";
+import {Initializable} from "oz-up/proxy/utils/Initializable.sol";
+import {PausableUpgradeable} from "oz-up/security/PausableUpgradeable.sol";
+import {ERC20PermitUpgradeable} from "oz-up/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
+import {UUPSUpgradeable} from "oz-up/proxy/utils/UUPSUpgradeable.sol";
+import {IERC4626Upgradeable} from "oz-up/interfaces/IERC4626Upgradeable.sol";
+import {AccessControlUpgradeable} from "oz-up/access/AccessControlUpgradeable.sol";
+import {IYieldOracle} from "../interfaces/IYieldOracle.sol";
+import {IEUD} from "../interfaces/IEUD.sol";
 
 /**
  * @author  Rhinefield Technologies Limited

@@ -5,13 +5,13 @@ pragma solidity ^0.8.21;
 
 import {Test} from "forge-std/Test.sol";
 import {ERC1967Proxy} from "oz/proxy/ERC1967/ERC1967Proxy.sol";
+import {Math} from "oz/utils/math/Math.sol";
 import {IEUD} from "../interfaces/IEUD.sol";
 import {IYieldOracle} from "../interfaces/IYieldOracle.sol";
 import {EUI} from "../src/EUI.sol";
 import {EUD} from "../src/EUD.sol";
 import {YieldOracle} from "../src/YieldOracle.sol";
 import {Constants} from "./Constants.sol";
-import "oz/utils/math/Math.sol";
 
 contract EUITest is Test, Constants {
     using Math for uint256;
