@@ -131,4 +131,61 @@ contract YieldOracleTest is Test, Constants {
         uint256 amount = 1e18; // 1.00e18
         assertEq(yieldOracle.fromEuiToEud(amount), 125e16); // 1.00*1.25=1.25
     }
+
+contract Pause is Test {
+    YieldOracle yieldOracle;
+
+    function setUp() public {
+        yieldOracle = new YieldOracle();
+        yieldOracle.grantRole(yieldOracle.PAUSE_ROLE(), msg.sender);
+        yieldOracle.grantRole(yieldOracle.ORACLE_ROLE(), msg.sender);
+        yieldOracle.grantRole(yieldOracle.DEFAULT_ADMIN_ROLE(), msg.sender);
+        vm.prank(msg.sender);
+        yieldOracle.pause();
+    }
+
+    function testCannotUpdatePrice () public {
+        assertTrue(yieldOracle.paused(), "Must be paused");
+        vm.prank(msg.sender);
+        vm.expectRevert("Pausable: paused");
+        yieldOracle.updatePrice(110e16);
+    }
+
+    function testCannotFromEuiToEud () public {
+        assertTrue(yieldOracle.paused(), "Must be paused");
+        vm.prank(msg.sender);
+        vm.expectRevert("Pausable: paused");
+        yieldOracle.fromEuiToEud(110e16);
+    }
+
+    function testCannotFromEudToEui () public {
+        assertTrue(yieldOracle.paused(), "Must be paused");
+        vm.prank(msg.sender);
+        vm.expectRevert("Pausable: paused");
+        yieldOracle.fromEudToEui(110e16);
+    }
+
+    function testSetMaxPriceIncrease(uint256 amount) public {
+        assertTrue(yieldOracle.paused(), "Must be paused");
+        vm.prank(msg.sender);
+        yieldOracle.setMaxPriceIncrease(amount);
+    }
+
+    function testSetDelay(uint256 amount) public {
+        assertTrue(yieldOracle.paused(), "Must be paused");
+        vm.prank(msg.sender);
+        yieldOracle.setDelay(amount);
+    }
+
+    function testAdminUpdateCurrentPrice() public {
+        assertTrue(yieldOracle.paused(), "Must be paused");
+        vm.prank(msg.sender);
+        yieldOracle.adminUpdateCurrentPrice(110e16);
+    }
+
+    function testAdminUpdateOldPrice() public {
+        assertTrue(yieldOracle.paused(), "Must be paused");
+        vm.prank(msg.sender);
+        yieldOracle.adminUpdateOldPrice(110e16);
+    }
 }

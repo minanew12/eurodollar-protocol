@@ -78,33 +78,23 @@ contract YieldOracle is Pausable, AccessControl {
         return true;
     }
 
-    function setMaxPriceIncrease(uint256 _maxPriceIncrease)
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-        whenNotPaused
-        returns (bool)
-    {
+    function setMaxPriceIncrease(uint256 _maxPriceIncrease) external onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
         maxPriceIncrease = _maxPriceIncrease;
         return true;
     }
 
-    function setDelay(uint256 _delay) external onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused returns (bool) {
+    function setDelay(uint256 _delay) external onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
         delay = _delay;
         return true;
     }
 
-    function adminUpdateCurrentPrice(uint256 price)
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-        whenNotPaused
-        returns (bool)
-    {
+    function adminUpdateCurrentPrice(uint256 price) external onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
         require(price >= 1e18, "YieldOracle: price must be greater than or equal to 1e18");
         currentPrice = price;
         return true;
     }
 
-    function adminUpdateOldPrice(uint256 price) external onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused returns (bool) {
+    function adminUpdateOldPrice(uint256 price) external onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
         require(price >= 1e18, "YieldOracle: price must be greater than or equal to 1e18");
         oldPrice = price;
         return true;
@@ -116,7 +106,7 @@ contract YieldOracle is Pausable, AccessControl {
      * @param   eudAmount  The amount of EUD tokens for which the equivalent EUI tokens need to be calculated.
      * @return  uint256  The equivalent amount of EUI tokens based on the current price from the yield oracle.
      */
-    function fromEudToEui(uint256 eudAmount) public view returns (uint256) {
+    function fromEudToEui(uint256 eudAmount) public view whenNotPaused returns (uint256) {
         return Math.mulDiv(eudAmount, 10 ** 18, currentPrice);
     }
 
@@ -126,7 +116,7 @@ contract YieldOracle is Pausable, AccessControl {
      * @param   euiAmount  The amount of EUI tokens for which the equivalent EUD tokens need to be calculated.
      * @return  uint256  The equivalent amount of EUD tokens based on the previous epoch price from the yield oracle.
      */
-    function fromEuiToEud(uint256 euiAmount) public view returns (uint256) {
+    function fromEuiToEud(uint256 euiAmount) public view whenNotPaused returns (uint256) {
         return Math.mulDiv(euiAmount, oldPrice, 10 ** 18);
     }
 }
