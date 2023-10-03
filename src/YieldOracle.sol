@@ -71,11 +71,17 @@ contract YieldOracle is Pausable, AccessControl {
      * @return  bool    A boolean indicating the success of the price update.
      */
     function updatePrice(uint256 newPrice) external onlyRole(ORACLE_ROLE) whenNotPaused returns (bool) {
-        require(block.timestamp >= lastUpdate + delay, "YieldOracle: price can only be updated once per hour");
-        require(newPrice >= 1e18, "YieldOracle: price must be greater than or equal to 1e18");
-        require(newPrice - currentPrice <= maxPriceIncrease, "YieldOracle: price increase exceeds maximum allowed");
+        require(block.timestamp >= lastUpdate + delay, "YieldOracle: price can only be updated after the delay period");
+        // solc doesn't seem to be able to do tain-analysis on the currentPrice
+        // so we cache the value here
+        uint256 currentPrice_ = currentPrice;
+        // We can assume the currentPrice is at least MIN_PRICE given other write paths,
+        // and the price increase check requires the delta to be positive,
+        // we can simply use the currentPrice_ here to compare
+        require(newPrice >= currentPrice_, "YieldOracle: price must be greater than or equal to the current price");
+        require(newPrice - currentPrice_ <= maxPriceIncrease, "YieldOracle: price increase exceeds maximum allowed");
         lastUpdate = block.timestamp;
-        oldPrice = currentPrice;
+        oldPrice = currentPrice_;
         currentPrice = newPrice;
         return true;
     }
