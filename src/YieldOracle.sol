@@ -7,6 +7,8 @@ import {Pausable} from "oz/security/Pausable.sol";
 import {AccessControl} from "oz/access/AccessControl.sol";
 import {Math} from "oz/utils/math/Math.sol";
 
+uint256 constant MIN_PRICE = 1e18;
+
 /**
  * @author  Rhinefield Technologies Limited
  * @title   YieldOracle
@@ -31,8 +33,8 @@ contract YieldOracle is Pausable, AccessControl {
      */
     constructor() {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        oldPrice = 1e18;
-        currentPrice = 1e18;
+        oldPrice = MIN_PRICE;
+        currentPrice = MIN_PRICE;
         maxPriceIncrease = 1e17;
         delay = 1 hours;
         lastUpdate = block.timestamp;
@@ -89,13 +91,13 @@ contract YieldOracle is Pausable, AccessControl {
     }
 
     function adminUpdateCurrentPrice(uint256 price) external onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
-        require(price >= 1e18, "YieldOracle: price must be greater than or equal to 1e18");
+        require(price >= MIN_PRICE, "YieldOracle: price must be greater than or equal to MIN_PRICE");
         currentPrice = price;
         return true;
     }
 
     function adminUpdateOldPrice(uint256 price) external onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
-        require(price >= 1e18, "YieldOracle: price must be greater than or equal to 1e18");
+        require(price >= MIN_PRICE, "YieldOracle: price must be greater than or equal to MIN_PRICE");
         oldPrice = price;
         return true;
     }

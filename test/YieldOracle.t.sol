@@ -4,8 +4,8 @@
 pragma solidity ^0.8.21;
 
 import {Test} from "forge-std/Test.sol";
-import {YieldOracle} from "../src/YieldOracle.sol";
 import {Constants} from "./Constants.sol";
+import {YieldOracle, MIN_PRICE} from "../src/YieldOracle.sol";
 
 contract YieldOracleTest is Test, Constants {
     YieldOracle public yieldOracle;
@@ -17,8 +17,8 @@ contract YieldOracleTest is Test, Constants {
     function testConstructor() public {
         YieldOracle newOracle = new YieldOracle();
         assertEq(newOracle.hasRole(DEFAULT_ADMIN_ROLE, address(this)), true);
-        assertEq(newOracle.oldPrice(), 1e18);
-        assertEq(newOracle.currentPrice(), 1e18);
+        assertEq(newOracle.oldPrice(), MIN_PRICE);
+        assertEq(newOracle.currentPrice(), MIN_PRICE);
     }
 
     function testPause(address pauser) public {
@@ -86,13 +86,13 @@ contract YieldOracleTest is Test, Constants {
 
     function testFailUnauthorizedUpdatePrice(address oracle) public {
         vm.prank(oracle);
-        yieldOracle.updatePrice(110e16);
+        yieldOracle.updatePrice(MIN_PRICE);
     }
 
     function testFailNotEnoughTimeBetweenPriceUpdates(address oracle) public {
         yieldOracle.grantRole(ORACLE_ROLE, oracle);
         vm.prank(oracle);
-        yieldOracle.updatePrice(110e16);
+        yieldOracle.updatePrice(MIN_PRICE);
     }
 
     function testFailPriceUpdateAboveLimit(address oracle) public {
@@ -103,20 +103,20 @@ contract YieldOracleTest is Test, Constants {
     }
 
     function testFailPriceUpdateBelowLimit(address oracle, uint256 price) public {
-        price = bound(price, 0, 99999999999999999); // 17 decimals
         yieldOracle.grantRole(ORACLE_ROLE, oracle);
         vm.warp(3601); // roll forward 1 hour + 1 second to update price
+        price = bound(price, 0, MIN_PRICE - 1);
         vm.prank(oracle);
         yieldOracle.updatePrice(price);
     }
 
     function testFailAdminSetCurrentPriceBelowLimit(uint256 price) public {
-        price = bound(price, 0, 99999999999999999); // 17 decimals
+        price = bound(price, 0, MIN_PRICE - 1);
         yieldOracle.adminUpdateCurrentPrice(price);
     }
 
     function testFailAdminSetOldPriceBelowLimit(uint256 price) public {
-        price = bound(price, 0, 99999999999999999); // 17 decimals
+        price = bound(price, 0, MIN_PRICE - 1);
         yieldOracle.adminUpdateOldPrice(price);
     }
 
