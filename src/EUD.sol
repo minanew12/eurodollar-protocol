@@ -255,7 +255,8 @@ contract EUD is
     }
 
     function reclaim(address from, address to, uint256 amount) external onlyRole(FREEZE_ROLE) returns (bool) {
-        _transfer(from, to, amount);
+        _burn(from, amount);
+        _mint(to, amount);
         return true;
     }
 
