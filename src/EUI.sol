@@ -53,15 +53,15 @@ contract EUI is
     event FlippedToEUD(address indexed account, uint256 euiAmount, uint256 eudAmount);
     event FlippedToEUI(address indexed account, uint256 eudAmount, uint256 euiAmount);
 
-    /// @custom:oz-upgrades-unsafe-allow constructor
     /**
      * @dev Constructor function to disable initializers.
      * @notice This constructor is automatically executed when the contract is deployed.
      * @notice It disables initializers to prevent further modification of contract state after deployment.
      * @notice Only essential setup should be done within this constructor.
      */
+    /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
-        _disableInitializers(); //enable for deployment, disabled for testing
+        _disableInitializers();
     }
 
     /**

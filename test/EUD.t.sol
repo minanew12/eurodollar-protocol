@@ -9,16 +9,15 @@ import {EUD} from "../src/EUD.sol";
 import {Constants} from "./Constants.sol";
 
 contract EUDTest is Test, Constants {
-    EUD public eudImp;
     EUD public eud;
 
     bytes32 constant PERMIT_TYPEHASH =
         keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
 
     function setUp() public {
-        eudImp = new EUD();
+        EUD implementation = new EUD();
         ERC1967Proxy eudProxy = new ERC1967Proxy(
-            address(eudImp), 
+            address(implementation),
             abi.encodeCall(EUD.initialize, ())
         );
         //eud.initialize();
@@ -402,14 +401,25 @@ contract EUDTest is Test, Constants {
         eud.permit(owner, receiver, amount, deadline, v, r, s);
     }
 
-    // TODO: add test of new function in upgraded contract to ensure upgrade is succesful.
+    // This event is not reachable directly from the original implementation for some reason
+    event Upgraded(address indexed implementation);
+
     function testAuthorizeUpgrade() public {
-        EUD newEud = new EUD();
-        eud.upgradeTo(address(newEud));
-        address(eud).call(abi.encodeCall(EUD.initialize, ()));
-        assertEq(eud.hasRole(0x00, address(this)), true);
+        EUDv2 newEud = new EUDv2();
+
+        // The Upgraded event is one observable side-effect of a successful upgrade
+        vm.expectEmit(address(eud));
+        emit Upgraded(address(newEud));
+        eud.upgradeToAndCall(address(newEud), abi.encodeCall(newEud.initializeV2, ()));
+
+        assertTrue(eud.hasRole(eud.DEFAULT_ADMIN_ROLE(), address(this)));
         assertEq(eud.symbol(), "EUD");
         assertEq(eud.name(), "EuroDollar");
         assertEq(eud.decimals(), 18);
     }
+}
+
+// Dummy v2 contract
+contract EUDv2 is EUD {
+    function initializeV2() public reinitializer(2) {}
 }

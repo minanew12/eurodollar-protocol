@@ -17,8 +17,6 @@ contract EUITest is Test, Constants {
     using Math for uint256;
 
     EUI public eui;
-    EUI public euiImp;
-    EUD public eudImp;
     EUD public eud;
     YieldOracle public yieldOracle;
     bytes32 constant PERMIT_TYPEHASH =
@@ -26,12 +24,11 @@ contract EUITest is Test, Constants {
 
     function setUp() public {
         // Setup EUD
-        eudImp = new EUD();
+        EUD eudImplementation = new EUD();
         ERC1967Proxy eudProxy = new ERC1967Proxy(
-            address(eudImp), 
+            address(eudImplementation), 
             abi.encodeCall(EUD.initialize, ())
         );
-        //eud.initialize();
         eud = EUD(address(eudProxy));
 
         // Setup YieldOracle
@@ -40,10 +37,9 @@ contract EUITest is Test, Constants {
         yieldOracle.adminUpdateOldPrice(1e18);
 
         // Setup EUI
-        euiImp = new EUI();
-        //eui.initialize(address(eud), address(yieldOracle));
+        EUI euiImplementation = new EUI();
         ERC1967Proxy euiProxy = new ERC1967Proxy(
-            address(euiImp), 
+            address(euiImplementation),
             abi.encodeCall(EUI.initialize, (address(eud), address(yieldOracle)))
         );
         eui = EUI(address(euiProxy));
@@ -449,17 +445,6 @@ contract EUITest is Test, Constants {
         );
         vm.warp(deadline);
         eui.permit(owner, receiver, amount, deadline, v, r, s);
-    }
-
-    // TODO: add test of new function in upgraded contract to ensure upgrade is succesful.
-    function testAuthorizeUpgrade(address eudProxy, address oracle) public {
-        EUI newEui = new EUI();
-        eui.upgradeTo(address(newEui));
-        address(eui).call(abi.encodeCall(EUI.initialize, (address(eudProxy), address(oracle))));
-        assertEq(eui.hasRole(0x00, address(this)), true);
-        assertEq(eui.symbol(), "EUI");
-        assertEq(eui.name(), "EuroDollar Invest");
-        assertEq(eui.decimals(), 18);
     }
 
     function testFlipToEui(address owner, address receiver, uint256 amount, uint256 price) public {
@@ -879,4 +864,24 @@ contract EUITest is Test, Constants {
     function invariant_assetIsEud() external {
         assertEq(eui.asset(), address(eui.eud()));
     }
+
+    // This event is not reachable directly from the original implementation for some reason
+    event Upgraded(address indexed implementation);
+
+    function testAuthorizeUpgrade() public {
+        EUIv2 newEui = new EUIv2();
+
+        vm.expectEmit(address(eui));
+        emit Upgraded(address(newEui));
+        eui.upgradeToAndCall(address(newEui), abi.encodeCall(EUIv2.initializeV2, ()));
+
+        assertEq(eui.hasRole(eui.DEFAULT_ADMIN_ROLE(), address(this)), true);
+        assertEq(eui.symbol(), "EUI");
+        assertEq(eui.name(), "EuroDollar Invest");
+        assertEq(eui.decimals(), 18);
+    }
+}
+
+contract EUIv2 is EUI {
+    function initializeV2() public reinitializer(2) {}
 }

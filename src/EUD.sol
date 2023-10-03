@@ -43,15 +43,15 @@ contract EUD is
         _;
     }
 
-    /// @custom:oz-upgrades-unsafe-allow constructor
     /**
      * @dev Constructor function to disable initializers.
      * @notice This constructor is automatically executed when the contract is deployed.
      * @notice It disables initializers to prevent further modification of contract state after deployment.
      * @notice Only essential setup should be done within this constructor.
      */
+    /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
-        _disableInitializers(); // Enable for deployment, disabled for testing.
+        _disableInitializers();
     }
 
     /**

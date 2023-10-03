@@ -17,21 +17,21 @@ contract Deploy is Script {
         console.log("Oracle address:");
         console.log(address(oracle));
 
-        EUD eud = new EUD();
-        console.log("EUD address:");
-        console.log(address(eud));
-        ERC1967Proxy eudProxy = new ERC1967Proxy(address(eud), abi.encodeCall(EUD.initialize, ()));
+        EUD eudImplementation = new EUD();
+        console.log("EUD implementation address:");
+        console.log(address(eudImplementation));
+        ERC1967Proxy eudProxy = new ERC1967Proxy(address(eudImplementation), abi.encodeCall(EUD.initialize, ()));
         console.log("EUDProxy address:");
         console.log(address(eudProxy));
 
-        EUI eui = new EUI();
-        console.log("EUI address:");
-        ERC1967Proxy euiproxy =
-            new ERC1967Proxy(address(eui), abi.encodeCall(EUI.initialize, (address(eudProxy), address(oracle))));
+        EUI euiImplementation = new EUI();
+        console.log("EUI implementation address:");
+        ERC1967Proxy euiProxy =
+        new ERC1967Proxy(address(euiImplementation), abi.encodeCall(EUI.initialize, (address(eudProxy), address(oracle))));
         console.log("EUIProxy address:");
-        console.log(address(euiproxy));
+        console.log(address(euiProxy));
         vm.stopBroadcast();
 
-        return (address(eud), address(eui), address(oracle));
+        return (address(eudProxy), address(euiProxy), address(oracle));
     }
 }
