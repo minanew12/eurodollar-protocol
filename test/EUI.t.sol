@@ -14,8 +14,7 @@ import {Constants} from "./Constants.sol";
 import "oz/utils/math/Math.sol";
 import "forge-std/console.sol";
 
-contract EUITest is Test, Constants
-{
+contract EUITest is Test, Constants {
     using Math for uint256;
 
     EUI public eui;
@@ -25,7 +24,6 @@ contract EUITest is Test, Constants
     YieldOracle public yieldOracle;
     bytes32 constant PERMIT_TYPEHASH =
         keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
-
 
     function setUp() public {
         // Setup EUD
@@ -116,7 +114,7 @@ contract EUITest is Test, Constants
         assert(eui.hasRole(DEFAULT_ADMIN_ROLE, account));
     }
 
-     function testFailUnauthorizedGrantRoles(address account) public {
+    function testFailUnauthorizedGrantRoles(address account) public {
         vm.assume(account != address(this));
         vm.prank(account);
         eui.grantRole(DEFAULT_ADMIN_ROLE, account);
@@ -311,8 +309,8 @@ contract EUITest is Test, Constants
         eui.freeze(account1, account2, amount);
         assertEq(eui.balanceOf(account2), amount);
         assertEq(eui.frozenBalances(account1), amount);
-        eui.release(account2, account1, amount+1);
-        assertEq(eui.balanceOf(account1), amount+1);
+        eui.release(account2, account1, amount + 1);
+        assertEq(eui.balanceOf(account1), amount + 1);
         assertEq(eui.frozenBalances(account2), 0);
     }
 
@@ -398,7 +396,7 @@ contract EUITest is Test, Constants
     }
 
     function testFailPermitTooLate(uint8 privateKey, address receiver, uint256 amount, uint256 deadline) public {
-        deadline = bound(deadline, 0, UINT256_MAX-1);
+        deadline = bound(deadline, 0, UINT256_MAX - 1);
         vm.assume(privateKey != 0);
         vm.assume(receiver != address(0));
         address owner = vm.addr(privateKey);
@@ -416,19 +414,27 @@ contract EUITest is Test, Constants
                 )
             )
         );
-        vm.warp(deadline+1);
+        vm.warp(deadline + 1);
         eui.permit(owner, receiver, amount, deadline, v, r, s);
 
         assertEq(eui.allowance(owner, receiver), amount);
         assertEq(eui.nonces(owner), 1);
     }
 
-    function testFailUnauthorizedPermit(uint8 privateKey1, uint8 privateKey2, address receiver, uint256 amount, uint256 deadline) public {
+    function testFailUnauthorizedPermit(
+        uint8 privateKey1,
+        uint8 privateKey2,
+        address receiver,
+        uint256 amount,
+        uint256 deadline
+    )
+        public
+    {
         vm.assume(privateKey1 != 0 && privateKey2 != 0);
         vm.assume(privateKey1 != privateKey2);
         vm.assume(receiver != address(0));
         address owner = vm.addr(privateKey1);
-    
+
         eui.addToAllowlist(receiver);
         eui.addToAllowlist(owner);
 
@@ -450,7 +456,7 @@ contract EUITest is Test, Constants
     function testAuthorizeUpgrade(address eudProxy, address oracle) public {
         EUI newEui = new EUI();
         eui.upgradeTo(address(newEui));
-        address(eui).call( abi.encodeCall(EUI.initialize, (address(eudProxy), address(oracle))));
+        address(eui).call(abi.encodeCall(EUI.initialize, (address(eudProxy), address(oracle))));
         assertEq(eui.hasRole(0x00, address(this)), true);
         assertEq(eui.symbol(), "EUI");
         assertEq(eui.name(), "EuroDollar Invest");
@@ -461,7 +467,7 @@ contract EUITest is Test, Constants
         // Bounds
         amount = bound(amount, 0, 1e39);
         price = bound(price, 1e18, 1e39);
-        
+
         // Assumes
         vm.assume(owner != address(0) && receiver != address(0));
 
@@ -484,7 +490,7 @@ contract EUITest is Test, Constants
         // Bounds
         amount = bound(amount, 1, 1e39);
         price = bound(price, 1e18, 1e39);
-        
+
         // Assumes
         vm.assume(owner != address(0) && receiver != address(0));
 
@@ -507,7 +513,7 @@ contract EUITest is Test, Constants
         // Bounds
         amount = bound(amount, 0, 1e39);
         price = bound(price, 1e18, 1e39);
-        
+
         // Assumes
         vm.assume(owner != address(0) && receiver != address(0));
 
@@ -520,8 +526,8 @@ contract EUITest is Test, Constants
         eud.mint(owner, amount);
         assertEq(eud.balanceOf(owner), amount);
         vm.startPrank(owner);
-        eud.approve(address(eui), amount+1);
-        eui.flipToEUI(owner, receiver, amount+1); // Test you cannot flip more than what as been approved
+        eud.approve(address(eui), amount + 1);
+        eui.flipToEUI(owner, receiver, amount + 1); // Test you cannot flip more than what as been approved
         vm.stopPrank();
         assertEq(eui.balanceOf(receiver), amount.mulDiv(1e18, price, Math.Rounding.Down));
     }
@@ -566,8 +572,8 @@ contract EUITest is Test, Constants
         eui.mintEUI(owner, amount);
         assertEq(eui.balanceOf(owner), amount);
         vm.startPrank(owner);
-        eui.approve(address(eui), amount+1);
-        eui.flipToEUD(owner, receiver, amount+1);
+        eui.approve(address(eui), amount + 1);
+        eui.flipToEUD(owner, receiver, amount + 1);
         vm.stopPrank();
         assertEq(eud.balanceOf(receiver), amount.mulDiv(price, 1e18, Math.Rounding.Down));
     }
@@ -678,8 +684,8 @@ contract EUITest is Test, Constants
         eud.mint(owner, amount);
         assertEq(eud.balanceOf(owner), amount);
         vm.startPrank(owner);
-        eud.approve(address(eui), amount+1);
-        eui.deposit(amount+1, receiver);
+        eud.approve(address(eui), amount + 1);
+        eui.deposit(amount + 1, receiver);
         vm.stopPrank();
         assertEq(eui.balanceOf(receiver), amount.mulDiv(1e18, price, Math.Rounding.Down));
     }
@@ -744,7 +750,15 @@ contract EUITest is Test, Constants
         assertEq(eui.previewWithdraw(amount), amount.mulDiv(1e18, yieldOracle.currentPrice(), Math.Rounding.Down));
     }
 
-    function testWithdraw(address owner, address receiver, uint256 amount, uint256 oldPrice, uint256 currentPrice) public {
+    function testWithdraw(
+        address owner,
+        address receiver,
+        uint256 amount,
+        uint256 oldPrice,
+        uint256 currentPrice
+    )
+        public
+    {
         // Bounds
         amount = bound(amount, 0, 1e39);
         oldPrice = bound(oldPrice, 1e18, 1e39);
@@ -767,7 +781,7 @@ contract EUITest is Test, Constants
         eui.approve(address(eui), euiAmount);
         eui.withdraw(amount, receiver, owner);
         vm.stopPrank();
-        assertEq(eud.balanceOf(receiver), amount);  
+        assertEq(eud.balanceOf(receiver), amount);
     }
 
     // function testWithdraw(address owner, address receiver, uint256 amount, uint256 oldPrice, uint256 currentPrice) public {
@@ -793,7 +807,7 @@ contract EUITest is Test, Constants
     //     eui.approve(address(eui), euiAmount);
     //     eui.withdraw(amount, receiver, owner);
     //     vm.stopPrank();
-    //     assertEq(eud.balanceOf(receiver), amount);  
+    //     assertEq(eud.balanceOf(receiver), amount);
     // }
 
     function testMaxRedeem(address account, uint256 amount) public {
@@ -837,7 +851,7 @@ contract EUITest is Test, Constants
         eui.approve(address(eui), amount);
         eui.redeem(amount, receiver, owner);
         vm.stopPrank();
-        assertEq(eud.balanceOf(receiver), amount.mulDiv(price, 1e18, Math.Rounding.Down));    
+        assertEq(eud.balanceOf(receiver), amount.mulDiv(price, 1e18, Math.Rounding.Down));
     }
 
     function testFailRedeemTooManyShares(address owner, address receiver, uint256 amount, uint256 price) public {
@@ -858,9 +872,9 @@ contract EUITest is Test, Constants
         assertEq(eui.balanceOf(owner), amount);
         vm.startPrank(owner);
         eui.approve(address(eui), amount);
-        eui.redeem(amount+1, receiver, owner);
+        eui.redeem(amount + 1, receiver, owner);
         vm.stopPrank();
-        assertEq(eud.balanceOf(receiver), amount.mulDiv(price, 1e18, Math.Rounding.Down));    
+        assertEq(eud.balanceOf(receiver), amount.mulDiv(price, 1e18, Math.Rounding.Down));
     }
 
     function invariant_assetIsEud() external {

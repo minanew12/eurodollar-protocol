@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: © 2023 Rhinefield Technologies Limited
 
 pragma solidity ^0.8.21;
+
 import "oz/security/Pausable.sol";
 import "oz/access/AccessControl.sol";
 import "oz/utils/math/Math.sol";
@@ -67,19 +68,22 @@ contract YieldOracle is Pausable, AccessControl {
      * @param   newPrice The new price for the next epoch.
      * @return  bool    A boolean indicating the success of the price update.
      */
-    function updatePrice(
-        uint256 newPrice
-    ) external onlyRole(ORACLE_ROLE) whenNotPaused returns (bool) {
+    function updatePrice(uint256 newPrice) external onlyRole(ORACLE_ROLE) whenNotPaused returns (bool) {
         require(block.timestamp >= lastUpdate + delay, "YieldOracle: price can only be updated once per hour");
         require(newPrice >= 1e18, "YieldOracle: price must be greater than or equal to 1e18");
-        require(newPrice-currentPrice <= maxPriceIncrease, "YieldOracle: price increase exceeds maximum allowed");
+        require(newPrice - currentPrice <= maxPriceIncrease, "YieldOracle: price increase exceeds maximum allowed");
         lastUpdate = block.timestamp;
         oldPrice = currentPrice;
         currentPrice = newPrice;
         return true;
     }
 
-    function setMaxPriceIncrease(uint256 _maxPriceIncrease) external onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused returns (bool) {
+    function setMaxPriceIncrease(uint256 _maxPriceIncrease)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+        whenNotPaused
+        returns (bool)
+    {
         maxPriceIncrease = _maxPriceIncrease;
         return true;
     }
@@ -89,16 +93,18 @@ contract YieldOracle is Pausable, AccessControl {
         return true;
     }
 
-    function adminUpdateCurrentPrice(
-        uint256 price
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused returns (bool) {
+    function adminUpdateCurrentPrice(uint256 price)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+        whenNotPaused
+        returns (bool)
+    {
         require(price >= 1e18, "YieldOracle: price must be greater than or equal to 1e18");
         currentPrice = price;
         return true;
     }
-    function adminUpdateOldPrice(
-        uint256 price
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused returns (bool) {
+
+    function adminUpdateOldPrice(uint256 price) external onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused returns (bool) {
         require(price >= 1e18, "YieldOracle: price must be greater than or equal to 1e18");
         oldPrice = price;
         return true;
@@ -111,12 +117,7 @@ contract YieldOracle is Pausable, AccessControl {
      * @return  uint256  The equivalent amount of EUI tokens based on the current price from the yield oracle.
      */
     function fromEudToEui(uint256 eudAmount) public view returns (uint256) {
-        return
-            Math.mulDiv(
-                eudAmount,
-                10 ** 18,
-                currentPrice
-            );
+        return Math.mulDiv(eudAmount, 10 ** 18, currentPrice);
     }
 
     /**
@@ -126,11 +127,6 @@ contract YieldOracle is Pausable, AccessControl {
      * @return  uint256  The equivalent amount of EUD tokens based on the previous epoch price from the yield oracle.
      */
     function fromEuiToEud(uint256 euiAmount) public view returns (uint256) {
-        return
-            Math.mulDiv(
-                euiAmount,
-                oldPrice,
-                10 ** 18
-            );
+        return Math.mulDiv(euiAmount, oldPrice, 10 ** 18);
     }
 }

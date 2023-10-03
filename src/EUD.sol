@@ -26,10 +26,10 @@ contract EUD is
     mapping(address => uint256) public frozenBalances;
 
     // Roles
-    bytes32 public constant PAUSE_ROLE  = keccak256("PAUSE_ROLE");
-    bytes32 public constant MINT_ROLE   = keccak256("MINT_ROLE");
-    bytes32 public constant BURN_ROLE   = keccak256("BURN_ROLE");
-    bytes32 public constant BLOCK_ROLE  = keccak256("BLOCK_ROLE");
+    bytes32 public constant PAUSE_ROLE = keccak256("PAUSE_ROLE");
+    bytes32 public constant MINT_ROLE = keccak256("MINT_ROLE");
+    bytes32 public constant BURN_ROLE = keccak256("BURN_ROLE");
+    bytes32 public constant BLOCK_ROLE = keccak256("BLOCK_ROLE");
     bytes32 public constant FREEZE_ROLE = keccak256("FREEZE_ROLE");
 
     /**
@@ -98,10 +98,7 @@ contract EUD is
      * @param   to  The address to receive the newly minted tokens.
      * @param   amount  The amount of tokens to mint and add to the account.
      */
-    function mint(
-        address to,
-        uint256 amount
-    ) public onlyRole(MINT_ROLE) notBlocked(to) {
+    function mint(address to, uint256 amount) public onlyRole(MINT_ROLE) notBlocked(to) {
         _mint(to, amount);
     }
 
@@ -131,7 +128,8 @@ contract EUD is
         address from,
         address to,
         uint256 amount
-    )   internal
+    )
+        internal
         override
         whenNotPaused
         notBlocked(msg.sender)
@@ -230,48 +228,29 @@ contract EUD is
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) public override notBlocked(owner) notBlocked(spender) {
+    )
+        public
+        override
+        notBlocked(owner)
+        notBlocked(spender)
+    {
         super.permit(owner, spender, value, deadline, v, r, s);
     }
 
-    function freeze(
-        address from,
-        address to,
-        uint256 amount
-    )   external
-        onlyRole(FREEZE_ROLE)
-        returns (bool)
-    {
+    function freeze(address from, address to, uint256 amount) external onlyRole(FREEZE_ROLE) returns (bool) {
         _transfer(from, to, amount);
         frozenBalances[from] += amount;
         return true;
     }
 
-    function release(
-        address from,
-        address to,
-        uint256 amount
-    )   external
-        onlyRole(FREEZE_ROLE)
-        returns (bool)
-    {
-        require(
-            frozenBalances[to] >= amount,
-            "Release amount exceeds balance"
-        );
+    function release(address from, address to, uint256 amount) external onlyRole(FREEZE_ROLE) returns (bool) {
+        require(frozenBalances[to] >= amount, "Release amount exceeds balance");
         frozenBalances[to] -= amount;
         _transfer(from, to, amount);
         return true;
     }
 
-    function reclaim(
-        address from,
-        address to,
-        uint256 amount
-    )   external
-        onlyRole(FREEZE_ROLE)
-        returns (bool)
-    {
+    function reclaim(address from, address to, uint256 amount) external onlyRole(FREEZE_ROLE) returns (bool) {
         _transfer(from, to, amount);
         return true;
     }
@@ -300,16 +279,12 @@ contract EUD is
         emit RemovedFromBlocklist(account);
     }
 
-    function addToBlocklist(
-        address account
-    ) external onlyRole(BLOCK_ROLE) {
-        _addToBlocklist(account); 
+    function addToBlocklist(address account) external onlyRole(BLOCK_ROLE) {
+        _addToBlocklist(account);
     }
 
-    function removeFromBlocklist(
-        address account
-    ) external onlyRole(BLOCK_ROLE) {
-        _removeFromBlocklist(account); 
+    function removeFromBlocklist(address account) external onlyRole(BLOCK_ROLE) {
+        _removeFromBlocklist(account);
     }
 
     /**
@@ -318,9 +293,7 @@ contract EUD is
      * @dev     Allows the `BLOCKLIST_ROLE` to add multiple addresses to the blocklist at once.
      * @param   accounts An array of addresses to be added to the blocklist.
      */
-    function addManyToBlocklist(
-        address[] calldata accounts
-    ) external onlyRole(BLOCK_ROLE) {
+    function addManyToBlocklist(address[] calldata accounts) external onlyRole(BLOCK_ROLE) {
         for (uint256 i; i < accounts.length; i++) {
             _addToBlocklist(accounts[i]);
         }
@@ -333,9 +306,7 @@ contract EUD is
      * @dev     Allows the `BLOCKLIST_ROLE` to remove an address from the blocklist.
      * @param   accounts An array of addresses to be removed from the blocklist.
      */
-    function removeManyFromBlocklist(
-        address[] calldata accounts
-    ) external onlyRole(BLOCK_ROLE) {
+    function removeManyFromBlocklist(address[] calldata accounts) external onlyRole(BLOCK_ROLE) {
         for (uint256 i; i < accounts.length; i++) {
             _removeFromBlocklist(accounts[i]);
         }
@@ -350,7 +321,5 @@ contract EUD is
      * @dev     Internal function to authorize an upgrade to a new implementation.
      * @param   newImplementation  The address of the new implementation contract.
      */
-    function _authorizeUpgrade(
-        address newImplementation
-    ) internal override onlyRole(DEFAULT_ADMIN_ROLE) {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyRole(DEFAULT_ADMIN_ROLE) {}
 }

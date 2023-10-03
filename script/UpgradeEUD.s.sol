@@ -9,5 +9,4 @@ import {EUI} from "../src/EUI.sol";
 import {YieldOracle} from "../src/YieldOracle.sol";
 import {ERC1967Proxy} from "oz/proxy/ERC1967/ERC1967Proxy.sol";
 
-contract UpgradeEUD is Script {
-}
+contract UpgradeEUD is Script {}

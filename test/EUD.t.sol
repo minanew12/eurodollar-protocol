@@ -8,8 +8,7 @@ import {ERC1967Proxy} from "oz/proxy/ERC1967/ERC1967Proxy.sol";
 import {EUD} from "../src/EUD.sol";
 import {Constants} from "./Constants.sol";
 
-contract EUDTest is Test, Constants
-{
+contract EUDTest is Test, Constants {
     EUD public eudImp;
     EUD public eud;
 
@@ -269,8 +268,8 @@ contract EUDTest is Test, Constants
         eud.freeze(account1, account2, amount);
         assertEq(eud.balanceOf(account2), amount);
         assertEq(eud.frozenBalances(account1), amount);
-        eud.release(account2, account1, amount+1);
-        assertEq(eud.balanceOf(account1), amount+1);
+        eud.release(account2, account1, amount + 1);
+        assertEq(eud.balanceOf(account1), amount + 1);
         assertEq(eud.frozenBalances(account2), 0);
     }
 
@@ -367,14 +366,22 @@ contract EUDTest is Test, Constants
                 )
             )
         );
-        vm.warp(deadline+1);
+        vm.warp(deadline + 1);
         eud.permit(owner, receiver, amount, deadline, v, r, s);
 
         assertEq(eud.allowance(owner, receiver), amount);
         assertEq(eud.nonces(owner), 1);
     }
 
-    function testFailUnauthorizedPermit(uint8 privateKey1, uint8 privateKey2, address receiver, uint256 amount, uint256 deadline) public {
+    function testFailUnauthorizedPermit(
+        uint8 privateKey1,
+        uint8 privateKey2,
+        address receiver,
+        uint256 amount,
+        uint256 deadline
+    )
+        public
+    {
         vm.assume(privateKey1 != 0 && privateKey2 != 0);
         vm.assume(privateKey1 != privateKey2);
         vm.assume(receiver != address(0));

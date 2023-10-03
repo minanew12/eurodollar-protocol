@@ -16,7 +16,6 @@
 //     EUI eui = EUI(0x0165878A594ca255338adfa4d48449f69242Eb8F);
 //     //address euiProxy = 0x0165878A594ca255338adfa4d48449f69242Eb8F;
 
-
 //     address admin = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
 
 //     function testGetCurrentPrice() public {
@@ -43,18 +42,18 @@
 //         eui.grantRole(ALLOW_ROLE, admin);
 //         eui.addToAllowlist(address(eui));
 //         assertEq(eud.hasRole(MINT_ROLE, admin), true);
-        
+
 //         eud.mint(account, 1000e18);
 //         assertEq(eud.balanceOf(account), 1000e18);
-        
+
 //         eud.burn(account, 1000e18);
 //         assertEq(eud.balanceOf(account), 0);
-        
+
 //         eud.pause();
 //         assertEq(eud.paused(), true);
 //         eud.unpause();
 //         assertEq(eud.paused(), false);
-        
+
 //         eui.addToAllowlist(account);
 //         eui.mintEUI(account, 1000e18);
 //         assertEq(eui.balanceOf(account), 1000e18);

@@ -7,9 +7,7 @@ import {Test} from "forge-std/Test.sol";
 import {YieldOracle} from "../src/YieldOracle.sol";
 import {Constants} from "./Constants.sol";
 
-contract YieldOracleTest is Test, Constants
-{
-
+contract YieldOracleTest is Test, Constants {
     YieldOracle public yieldOracle;
 
     function setUp() public {
@@ -124,13 +122,13 @@ contract YieldOracleTest is Test, Constants
 
     function testFromEudtoEui() public {
         yieldOracle.adminUpdateCurrentPrice(125e16); // 1.25e18
-        uint256 amount = 1e18;     // 1.00e18 
+        uint256 amount = 1e18; // 1.00e18
         assertEq(yieldOracle.fromEudToEui(amount), 8e17); // 1.00/1.25=0.8
     }
 
     function testFromEuiToEud() public {
         yieldOracle.adminUpdateOldPrice(125e16); // 1.25e18
-        uint256 amount = 1e18;     // 1.00e18 
+        uint256 amount = 1e18; // 1.00e18
         assertEq(yieldOracle.fromEuiToEud(amount), 125e16); // 1.00*1.25=1.25
     }
 }
