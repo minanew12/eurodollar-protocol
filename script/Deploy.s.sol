@@ -14,8 +14,6 @@ contract Deploy is Script {
     function run() external returns (address, address, address) {
         vm.startBroadcast();
         YieldOracle oracle = new YieldOracle();
-        require(oracle.adminUpdateCurrentPrice(1e18));
-        require(oracle.adminUpdateOldPrice(1e18));
         console.log("Oracle address:");
         console.log(address(oracle));
 
@@ -23,7 +21,6 @@ contract Deploy is Script {
         console.log("EUD address:");
         console.log(address(eud));
         ERC1967Proxy eudProxy = new ERC1967Proxy(address(eud), abi.encodeCall(EUD.initialize, ()));
-        //address(eudProxy).call(abi.encodeWithSignature("grantRole(bytes32,address)", DEFAULT_ADMIN_ROLE, admin));
         console.log("EUDProxy address:");
         console.log(address(eudProxy));
 

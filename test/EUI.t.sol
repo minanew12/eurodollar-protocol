@@ -12,7 +12,6 @@ import {EUD} from "../src/EUD.sol";
 import {YieldOracle} from "../src/YieldOracle.sol";
 import {Constants} from "./Constants.sol";
 import "oz/utils/math/Math.sol";
-import "forge-std/console.sol";
 
 contract EUITest is Test, Constants {
     using Math for uint256;
