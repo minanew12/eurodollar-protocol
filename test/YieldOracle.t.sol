@@ -70,6 +70,27 @@ contract YieldOracleTest is Test, YieldOracleInvariants {
         vm.stopPrank();
     }
 
+    function testAdminSetPricesWhenPaused(address pauser) public {
+        yieldOracle.grantRole(yieldOracle.PAUSE_ROLE(), pauser);
+
+        vm.prank(pauser);
+        yieldOracle.pause();
+        assertEq(yieldOracle.paused(), true);
+
+        yieldOracle.adminUpdateCurrentPrice(2e18);
+        assertEq(yieldOracle.currentPrice(), 2e18);
+
+        yieldOracle.adminUpdateOldPrice(2e18);
+        assertEq(yieldOracle.oldPrice(), 2e18);
+
+        vm.prank(pauser);
+        yieldOracle.unpause();
+        assertEq(yieldOracle.paused(), false);
+
+        assertEq(yieldOracle.currentPrice(), 2e18);
+        assertEq(yieldOracle.oldPrice(), 2e18);
+    }
+
     function testGrantPauseRole(address account) public {
         yieldOracle.grantRole(yieldOracle.PAUSE_ROLE(), account);
         assertTrue(yieldOracle.hasRole(yieldOracle.PAUSE_ROLE(), account));
