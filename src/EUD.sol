@@ -23,6 +23,7 @@ contract EUD is
     UUPSUpgradeable,
     AccessControlUpgradeable
 {
+    mapping(address => bool) public blocklist;
     mapping(address => uint256) public frozenBalances;
 
     // Roles
@@ -42,6 +43,13 @@ contract EUD is
         if (account != address(0)) require(blocklist[account] == false, "Account is blocked");
         _;
     }
+
+    //Events
+    event AddedToBlocklist(address indexed account);
+    event RemovedFromBlocklist(address indexed account);
+    event Freeze(address indexed from, address indexed to, uint256 amount);
+    event Release(address indexed from, address indexed to, uint256 amount);
+    event Reclaim(address indexed from, address indexed to, uint256 amount);
 
     /**
      * @dev Constructor function to disable initializers.
@@ -124,23 +132,43 @@ contract EUD is
      * @param   to  The address to which tokens are transferred.
      * @param   amount  The amount of tokens being transferred.
      */
-    function _beforeTokenTransfer(
+    function _beforeTokenTransfer(address from, address to, uint256 amount) internal override whenNotPaused {}
+
+    function transfer(
+        address to,
+        uint256 amount
+    )
+        public
+        override
+        whenNotPaused()
+        notBlocked(msg.sender)
+        notBlocked(to)
+        returns (bool)
+    {
+        return super.transfer(to, amount);
+    }
+
+    function transferFrom(
         address from,
         address to,
         uint256 amount
     )
-        internal
+        public
         override
-        whenNotPaused
+        whenNotPaused()
         notBlocked(from)
         notBlocked(to)
-    {}
+        returns (bool)
+    {
+        return super.transferFrom(from, to, amount);
+    }
 
     function freeze(address from, address to, uint256 amount) external onlyRole(FREEZE_ROLE) returns (bool) {
         _transfer(from, to, amount);
         unchecked {
             frozenBalances[from] += amount;
         }
+        emit Freeze(from, to, amount);
         return true;
     }
 
@@ -150,21 +178,16 @@ contract EUD is
             frozenBalances[to] -= amount;
         }
         _transfer(from, to, amount);
+        emit Release(from, to, amount);
         return true;
     }
 
     function reclaim(address from, address to, uint256 amount) external onlyRole(FREEZE_ROLE) returns (bool) {
         _burn(from, amount);
         _mint(to, amount);
+        emit Reclaim(from, to, amount);
         return true;
     }
-
-    // Blocklist
-    mapping(address => bool) public blocklist;
-
-    // event
-    event AddedToBlocklist(address indexed account);
-    event RemovedFromBlocklist(address indexed account);
 
     /**
      * @notice  This function is called internally to add an address to the blocklist.

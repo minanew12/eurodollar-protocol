@@ -7,7 +7,6 @@ import {Initializable} from "oz-up/proxy/utils/Initializable.sol";
 import {PausableUpgradeable} from "oz-up/security/PausableUpgradeable.sol";
 import {ERC20PermitUpgradeable} from "oz-up/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
 import {UUPSUpgradeable} from "oz-up/proxy/utils/UUPSUpgradeable.sol";
-import {IERC4626Upgradeable} from "oz-up/interfaces/IERC4626Upgradeable.sol";
 import {AccessControlUpgradeable} from "oz-up/access/AccessControlUpgradeable.sol";
 import {IYieldOracle} from "../interfaces/IYieldOracle.sol";
 import {IEUD} from "../interfaces/IEUD.sol";
@@ -23,13 +22,14 @@ contract EUI is
     PausableUpgradeable,
     ERC20PermitUpgradeable,
     UUPSUpgradeable,
-    IERC4626Upgradeable,
     AccessControlUpgradeable
 {
     IYieldOracle public yieldOracle;
     IEUD public eud;
 
     mapping(address => uint256) public frozenBalances;
+    mapping(address => bool) public allowlist;
+
 
     // Roles
     bytes32 public constant PAUSE_ROLE = keccak256("PAUSE_ROLE");
@@ -50,8 +50,23 @@ contract EUI is
     }
 
     // Events
+    event AddedToAllowlist(address indexed account);
+    event RemovedFromAllowlist(address indexed account);
     event FlippedToEUD(address indexed account, uint256 euiAmount, uint256 eudAmount);
     event FlippedToEUI(address indexed account, uint256 eudAmount, uint256 euiAmount);
+    event Freeze(address indexed from, address indexed to, uint256 amount);
+    event Release(address indexed from, address indexed to, uint256 amount);
+    event Reclaim(address indexed from, address indexed to, uint256 amount);
+    event Allow(address indexed account);
+    event Deny(address indexed account);
+    event Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares);
+    event Withdraw(
+        address indexed sender,
+        address indexed receiver,
+        address indexed owner,
+        uint256 assets,
+        uint256 shares
+    );
 
     /**
      * @dev Constructor function to disable initializers.
@@ -146,17 +161,36 @@ contract EUI is
      * @param   to  The address to which tokens are transferred.
      * @param   amount  The amount of tokens being transferred.
      */
-    function _beforeTokenTransfer(
+    function _beforeTokenTransfer(address from, address to, uint256 amount) internal override {}
+
+    function transfer(
+        address to,
+        uint256 amount
+    )
+        public
+        override
+        whenNotPaused()
+        onlyAllowed(msg.sender)
+        onlyAllowed(to)
+        returns (bool)
+    {
+        return super.transfer(to, amount);
+    }
+
+    function transferFrom(
         address from,
         address to,
         uint256 amount
     )
-        internal
+        public
         override
-        whenNotPaused
+        whenNotPaused()
         onlyAllowed(from)
         onlyAllowed(to)
-    {}
+        returns (bool)
+    {
+        return super.transferFrom(from, to, amount);
+    }
 
     // ERC1967
     /**
@@ -174,6 +208,7 @@ contract EUI is
         unchecked {
             frozenBalances[from] += amount;
         }
+        emit Freeze(from, to, amount);
         return true;
     }
 
@@ -183,22 +218,16 @@ contract EUI is
             frozenBalances[to] -= amount;
         }
         _transfer(from, to, amount);
+        emit Release(from, to, amount);
         return true;
     }
 
     function reclaim(address from, address to, uint256 amount) external onlyRole(FREEZE_ROLE) returns (bool) {
         _burn(from, amount);
         _mint(to, amount);
-
+        emit Reclaim(from, to, amount);
         return true;
     }
-
-    // Allowlist
-    mapping(address => bool) public allowlist;
-
-    // event
-    event AddedToAllowlist(address indexed account);
-    event RemovedFromAllowlist(address indexed account);
 
     /**
      * @notice  This function is called internally to add an address to the allowlist.
@@ -244,29 +273,33 @@ contract EUI is
         }
     }
 
-    function flipToEUI(address owner, address receiver, uint256 amount) public whenNotPaused returns (uint256) {
-        uint256 euiMintAmount = yieldOracle.fromEudToEui(amount);
-        require(eud.transferFrom(owner, address(this), amount), "EUD transfer failed");
-        eud.burn(address(this), amount);
+    function flipToEUI(
+        address owner,
+        address receiver,
+        uint256 eudAmount
+    ) public whenNotPaused returns (uint256) {
+        uint256 euiMintAmount = yieldOracle.fromEudToEui(eudAmount);
+        require(eud.transferFrom(owner, address(this), eudAmount), "EUD transfer failed");
+        eud.burn(address(this), eudAmount);
         _mint(receiver, euiMintAmount);
-        emit FlippedToEUI(msg.sender, amount, euiMintAmount);
+        emit FlippedToEUI(msg.sender, eudAmount, euiMintAmount);
         return euiMintAmount;
     }
 
     /**
      * @notice  This function can only be called from within the contract and is used to perform EUI to EUD token conversion.
      * @dev     Internal function to convert EUI tokens to EUD tokens.
-     * @param   amount  The amount of EUI tokens to be converted to EUD tokens.
+     * @param   euiAmount  The amount of EUI tokens to be converted to EUD tokens.
      * @param   receiver  The address to receive the minted EUD tokens.
      * @param   owner  The address from which the EUI tokens will be burned.
      * @return  uint256  The equivalent amount of EUD tokens based on the previous epoch price from the yield oracle.
      */
-    function flipToEUD(address owner, address receiver, uint256 amount) public whenNotPaused returns (uint256) {
-        uint256 eudMintAmount = yieldOracle.fromEuiToEud(amount);
-        require(this.transferFrom(owner, address(this), amount), "EUI transfer failed");
-        _burn(address(this), amount);
+    function flipToEUD(address owner, address receiver, uint256 euiAmount) public whenNotPaused returns (uint256) {
+        uint256 eudMintAmount = yieldOracle.fromEuiToEud(euiAmount);
+        require(this.transferFrom(owner, address(this), euiAmount), "EUI transfer failed");
+        _burn(address(this), euiAmount);
         eud.mint(receiver, eudMintAmount);
-        emit FlippedToEUD(msg.sender, amount, eudMintAmount);
+        emit FlippedToEUD(msg.sender, euiAmount, eudMintAmount);
         return eudMintAmount;
     }
 
@@ -335,6 +368,8 @@ contract EUI is
      * @param   receiver  The address that will receive the shares (EUI).
      * @return  uint256  The number of shares (EUI) received after depositing the specified amount of assets (EUD).
      */
+
+
     function deposit(uint256 assets, address receiver) public returns (uint256) {
         // require(
         //     assets <= maxDeposit(receiver),      THIS IS UINT256_MAX, so no reason to check
@@ -344,6 +379,18 @@ contract EUI is
         emit Deposit(msg.sender, receiver, assets, shares);
         return shares;
     }
+    // function deposit(uint256 assets, address receiver) public returns (uint256) {
+    //     // require(
+    //     //     assets <= maxDeposit(receiver),      THIS IS UINT256_MAX, so no reason to check
+    //     //     "ERC4626: deposit more than max"
+    //     // );
+    //     uint256 shares = yieldOracle.fromEudToEui(assets);
+    //     require(eud.transferFrom(msg.sender, address(this), assets), "EUD transfer failed");
+    //     eud.burn(address(this), assets);
+    //     _mint(receiver, shares);
+    //     emit Deposit(msg.sender, receiver, assets, shares);
+    //     return shares;
+    // }
 
     // Mint
     /**
@@ -378,8 +425,8 @@ contract EUI is
      */
     function mint(uint256 shares, address receiver) public returns (uint256) {
         // require(shares <= maxMint(receiver), "ERC4626: mint more than max"); THIS IS UINT256_MAX NO REASON TO CHECK
-        uint256 assetAmount = _convertToAssets(shares);
-        uint256 assets = flipToEUI(msg.sender, receiver, assetAmount);
+        uint256 assets = _convertToAssets(shares);
+        flipToEUI(msg.sender, receiver, assets);
         emit Deposit(msg.sender, receiver, assets, shares);
         return assets;
     }
@@ -397,7 +444,7 @@ contract EUI is
         if (paused()) {
             return 0;
         }
-        return _convertToAssets(balanceOf(owner));
+        return convertToAssets(balanceOf(owner));
     }
 
     /**
@@ -423,6 +470,7 @@ contract EUI is
      * @return  uint256  The amount of shares (EUI) redeemed for the given amount of assets (EUD).
      */
     function withdraw(uint256 assets, address receiver, address owner) public returns (uint256) {
+        //require(assets <= maxWithdraw(owner), "ERC4626: withdraw more than max");
         uint256 euiAmount = _convertToShares(assets);
         require(this.transferFrom(owner, address(this), euiAmount), "EUI transfer failed");
         _burn(address(this), euiAmount);
@@ -470,7 +518,11 @@ contract EUI is
      */
     function redeem(uint256 shares, address receiver, address owner) public returns (uint256) {
         require(shares <= maxRedeem(owner), "ERC4626: redeem more than max");
-        uint256 assets = flipToEUD(owner, receiver, shares);
+        uint256 assets = convertToAssets(shares);
+        require(this.transferFrom(owner, address(this), shares), "EUI transfer failed");
+        _burn(address(this), shares);
+        eud.mint(receiver, assets);
+        //uint256 assets = flipToEUD(owner, receiver, shares);
         emit Withdraw(msg.sender, receiver, owner, assets, shares);
         return assets;
     }

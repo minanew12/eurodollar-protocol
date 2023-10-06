@@ -768,32 +768,6 @@ contract EUITest is Test, Constants {
         assertEq(eud.balanceOf(receiver), amount);
     }
 
-    // function testWithdraw(address owner, address receiver, uint256 amount, uint256 oldPrice, uint256 currentPrice) public {
-    //     // Bounds
-    //     amount = bound(amount, 0, 1e39);
-    //     oldPrice = bound(oldPrice, 1, 1e39);
-    //     currentPrice = bound(currentPrice, 1, 1e39);
-
-    //     // Assumes
-    //     vm.assume(owner != address(0) && receiver != address(0));
-
-    //     // Setup
-    //     eui.addToAllowlist(owner);
-    //     eui.addToAllowlist(receiver);
-    //     yieldOracle.adminUpdateOldPrice(oldPrice);
-    //     yieldOracle.adminUpdateCurrentPrice(currentPrice);
-
-    //     // Test
-    //     uint256 euiAmount = yieldOracle.fromEudToEui(amount);
-    //     eui.mintEUI(owner, euiAmount);
-    //     assertEq(eui.balanceOf(owner), euiAmount);
-    //     vm.startPrank(owner);
-    //     eui.approve(address(eui), euiAmount);
-    //     eui.withdraw(amount, receiver, owner);
-    //     vm.stopPrank();
-    //     assertEq(eud.balanceOf(receiver), amount);
-    // }
-
     function testMaxRedeem(address account, uint256 amount) public {
         vm.assume(account != address(0));
         eui.addToAllowlist(account);
