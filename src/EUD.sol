@@ -12,8 +12,6 @@ import {AccessControlUpgradeable} from "oz-up/access/AccessControlUpgradeable.so
 /**
  * @author  Rhinefield Technologies Limited
  * @title   EUD - Eurodollar Token
- * @dev     Inherits the OpenZepplin ERC20Upgradeable implentation
- * @notice  Serves as a stable token
  */
 
 contract EUD is
@@ -23,7 +21,9 @@ contract EUD is
     UUPSUpgradeable,
     AccessControlUpgradeable
 {
+    // @notice Blocklist contains addresses that are not allowed to send or receive tokens.
     mapping(address => bool) public blocklist;
+    // @notice Mapping of frozen balances that cannot be transferred.
     mapping(address => uint256) public frozenBalances;
 
     // Roles
@@ -34,17 +34,15 @@ contract EUD is
     bytes32 public constant FREEZE_ROLE = keccak256("FREEZE_ROLE");
 
     /**
-     * @notice  The function using this modifier will only execute if the account is not blocked.
-     * @notice  If the account is blocked, the transaction will be reverted with the error message "Account is blocked."
-     * @dev     Modifier to check if the given account is not blocked.
-     * @param   account  The address to be checked for blocklisting.
+     * @dev Modifier to check if an account is not blocked.
+     * @param account The address of the account to check.
      */
     modifier notBlocked(address account) {
         if (account != address(0)) require(blocklist[account] == false, "Account is blocked");
         _;
     }
 
-    //Events
+    // Events
     event AddedToBlocklist(address indexed account);
     event RemovedFromBlocklist(address indexed account);
     event Freeze(address indexed from, address indexed to, uint256 amount);
@@ -52,12 +50,8 @@ contract EUD is
     event Reclaim(address indexed from, address indexed to, uint256 amount);
 
     /**
-     * @dev Constructor function to disable initializers.
-     * @notice This constructor is automatically executed when the contract is deployed.
-     * @notice It disables initializers to prevent further modification of contract state after deployment.
-     * @notice Only essential setup should be done within this constructor.
+     * @notice Disables initializers from being called more than once.
      */
-    /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
@@ -65,8 +59,6 @@ contract EUD is
     /**
      * @notice  This function is called only once during the contract deployment process.
      * @notice  It sets up the EUD token with essential features and permissions.
-     * @notice  The contracts' addresses for blocklisting and access control are provided as parameters.
-     * @dev     Initialization function to set up the EuroDollar (EUD) token contract.
      */
     function initialize() public initializer {
         __ERC20_init("EuroDollar", "EUD");
@@ -76,64 +68,14 @@ contract EUD is
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
-    // ERC20 Pausable
-    /**
-     * @notice  This function can only be called by an account with the `PAUSE_ROLE`.
-     * @notice  It pauses certain functionalities of the contract, preventing certain actions.
-     * @notice  Once paused, certain operations may not be available until the contract is unpaused.
-     * @dev     Pauses the contract functionality.
-     */
-    function pause() public onlyRole(PAUSE_ROLE) {
-        _pause();
-    }
-
-    /**
-     * @notice  This function can only be called by an account with the `PAUSE_ROLE`.
-     * @notice  It resumes certain functionalities of the contract that were previously paused.
-     * @notice  Once unpaused, the contract regains its full functionality.
-     * @dev     Unpauses the contract functionality.
-     */
-    function unpause() public onlyRole(PAUSE_ROLE) {
-        _unpause();
-    }
-
-    // Supply Management
-    /**
-     * @notice  This function can only be called by an account with the `MINT_ROLE`.
-     * @notice  It mints new tokens and assigns them to the specified recipient's account.
-     * @notice  The recipient's account must not be blocklisted.
-     * @dev     Mints new tokens and adds them to the specified account.
-     * @param   to  The address to receive the newly minted tokens.
-     * @param   amount  The amount of tokens to mint and add to the account.
-     */
-    function mint(address to, uint256 amount) public onlyRole(MINT_ROLE) {
-        _mint(to, amount);
-    }
-
-    /**
-     * @notice  This function can only be called by an account with the `BURN_ROLE`.
-     * @notice  It removes the specified amount of tokens from the `from` account.
-     * @notice  Burning tokens effectively reduces the total supply of the token.
-     * @dev     Burns a specific amount of tokens from the specified account.
-     * @param   from  The address from which tokens will be burned.
-     * @param   amount  The amount of tokens to be burned.
-     */
-    function burn(address from, uint256 amount) public onlyRole(BURN_ROLE) {
-        _burn(from, amount);
-    }
-
     // ERC20 Base
     /**
-     * @notice  This function is an internal override and is automatically called before token transfers.
-     * @notice  It ensures that token transfers are only allowed when the contract is not paused.
-     * @notice  This function is used to implement additional checks or logic before token transfers.
-     * @dev     Hook function called before any token transfer occurs(check paused or not).
-     * @param   from  The address from which tokens are transferred.
-     * @param   to  The address to which tokens are transferred.
-     * @param   amount  The amount of tokens being transferred.
+     * @notice Transfers tokens from msg.sender to a specified recipient.
+     * @notice The sender or receiver account must not be on the blocklist.
+     * @param to The address to transfer tokens to.
+     * @param amount The amount of tokens to transfer.
+     * @return A boolean value indicating whether the transfer was successful.
      */
-    function _beforeTokenTransfer(address from, address to, uint256 amount) internal override whenNotPaused {}
-
     function transfer(
         address to,
         uint256 amount
@@ -147,6 +89,14 @@ contract EUD is
         return super.transfer(to, amount);
     }
 
+    /**
+     * @notice Transfers tokens from one address to another if approval is granted.
+     * @notice The sender or receiver account must not be on the blocklist.
+     * @param from The address which you want to send tokens from.
+     * @param to The address which you want to transfer to.
+     * @param amount The amount of tokens to be transferred.
+     * @return A boolean that indicates if the operation was successful.
+     */
     function transferFrom(
         address from,
         address to,
@@ -161,6 +111,63 @@ contract EUD is
         return super.transferFrom(from, to, amount);
     }
 
+    /**
+     * @notice  Hook function called before any token transfers, mints or burns.
+     * @notice  Ensures that token transfers are only allowed when the contract is not paused.
+     * @param   from  The address from which tokens are transferred.
+     * @param   to  The address to which tokens are transferred.
+     * @param   amount  The amount of tokens being transferred.
+     */
+    function _beforeTokenTransfer(address from, address to, uint256 amount) internal override whenNotPaused {}
+
+    // Supply Management
+    /**
+     * @notice  Mints new tokens and adds them to the specified account.
+     * @notice  This function can only be called by an account with the `MINT_ROLE`.
+     * @notice  The recipient's account must not be on the blocklist.
+     * @param   to  The address to receive the newly minted tokens.
+     * @param   amount  The amount of tokens to mint to the account.
+     */
+    function mint(address to, uint256 amount) public onlyRole(MINT_ROLE) {
+        _mint(to, amount);
+    }
+
+    /**
+     * @notice  Burns a specific amount of tokens from a specified account.
+     * @notice  This function can only be called by an account with the `BURN_ROLE`.
+     * @param   from  The address from which tokens will be burned.
+     * @param   amount  The amount of tokens to be burned.
+     */
+    function burn(address from, uint256 amount) public onlyRole(BURN_ROLE) {
+        _burn(from, amount);
+    }
+
+    // Token Management Functions
+   /**
+     * @notice  This function can only be called by an account with the `PAUSE_ROLE`.
+     * @notice  Once paused, certain operations are unavailable until the contract is unpaused.
+     */
+    function pause() public onlyRole(PAUSE_ROLE) {
+        _pause();
+    }
+
+    /**
+     * @notice  This function can only be called by an account with the `PAUSE_ROLE`.
+     * @notice  It resumes certain functionalities of the contract that were previously paused.
+     */
+    function unpause() public onlyRole(PAUSE_ROLE) {
+        _unpause();
+    }
+
+    /**
+     * @notice Freezes a specified amount of tokens from a specified address.
+     * @notice Only callable by accounts with the `FREEZE_ROLE`.
+     * @notice The `to` address will be a contract address that will hold the frozen tokens.
+     * @param from The address to freeze tokens from.
+     * @param to The address to transfer the frozen tokens to.
+     * @param amount The amount of tokens to freeze.
+     * @return A boolean value indicating whether the operation succeeded.
+     */
     function freeze(address from, address to, uint256 amount) external onlyRole(FREEZE_ROLE) returns (bool) {
         _transfer(from, to, amount);
         unchecked {
@@ -170,6 +177,14 @@ contract EUD is
         return true;
     }
 
+    /**
+     * @notice Release a specified amount of frozen tokens.
+     * @notice Only callable by accounts with the `FREEZE_ROLE`.
+     * @param from The address that currently holds the frozen tokens.
+     * @param to The address that will receive the released tokens.
+     * @param amount The amount of tokens to release.
+     * @return A boolean indicating whether the release was successful.
+     */
     function release(address from, address to, uint256 amount) external onlyRole(FREEZE_ROLE) returns (bool) {
         require(frozenBalances[to] >= amount, "Release amount exceeds balance");
         unchecked {
@@ -180,6 +195,15 @@ contract EUD is
         return true;
     }
 
+    /**
+     * @notice Reclaims tokens from one address and mints them to another address.
+     * @notice Only callable by accounts with the `FREEZE_ROLE`.
+     * @notice Can be used in the event of lost user access to tokens.
+     * @param from The address of the account to reclaim tokens from.
+     * @param to The address of the account to mint tokens to.
+     * @param amount The amount of tokens to reclaim and mint.
+     * @return A boolean value indicating whether the operation succeeded.
+     */
     function reclaim(address from, address to, uint256 amount) external onlyRole(FREEZE_ROLE) returns (bool) {
         _burn(from, amount);
         _mint(to, amount);
@@ -188,12 +212,45 @@ contract EUD is
     }
 
     /**
-     * @notice  This function is called internally to add an address to the blocklist.
-     * @notice  The address must not be already on the blocklist.
-     * @notice  Emits an `addedToBlocklist` event upon successful addition.
-     * @dev     Internal function to add an address to the blocklist.
+     * @notice  Add an address to the blocklist.
+     * @notice Only callable by accounts with the `BLOCK_ROLE`.
      * @param   account The address to be added to the blocklist.
      */
+    function addToBlocklist(address account) external onlyRole(BLOCK_ROLE) {
+        _addToBlocklist(account);
+    }
+    
+    /**
+     * @notice  Remove an address from the blocklist.
+     * @notice Only callable by accounts with the `BLOCK_ROLE`.
+     * @param   account The address to be removed from the blocklist.
+     */
+    function removeFromBlocklist(address account) external onlyRole(BLOCK_ROLE) {
+        _removeFromBlocklist(account);
+    }
+
+    /**
+     * @notice  Add multiple addresses to the blocklist.
+     * @notice Only callable by accounts with the `BLOCK_ROLE`.
+     * @param   accounts The addresses to be added to the blocklist.
+     */
+    function addManyToBlocklist(address[] calldata accounts) external onlyRole(BLOCK_ROLE) {
+        for (uint256 i; i < accounts.length; i++) {
+            _addToBlocklist(accounts[i]);
+        }
+    }
+
+    /**
+     * @notice  Remove multiple addresses from the blocklist.
+     * @notice  Only callable by accounts with the `BLOCK_ROLE`.
+     * @param   accounts The addresses to be removed from the blocklist.
+     */
+    function removeManyFromBlocklist(address[] calldata accounts) external onlyRole(BLOCK_ROLE) {
+        for (uint256 i; i < accounts.length; i++) {
+            _removeFromBlocklist(accounts[i]);
+        }
+    }
+
     function _addToBlocklist(address account) internal {
         blocklist[account] = true;
         emit AddedToBlocklist(account);
@@ -204,46 +261,10 @@ contract EUD is
         emit RemovedFromBlocklist(account);
     }
 
-    function addToBlocklist(address account) external onlyRole(BLOCK_ROLE) {
-        _addToBlocklist(account);
-    }
-
-    function removeFromBlocklist(address account) external onlyRole(BLOCK_ROLE) {
-        _removeFromBlocklist(account);
-    }
-
+    // ERC1967 Proxy
     /**
-     * @notice  This function is accessible only to accounts with the `BLOCKLIST_ROLE`.
-     * @notice  It iterates through the provided addresses and calls the internal `_addToBlocklist` function for each one.
-     * @dev     Allows the `BLOCKLIST_ROLE` to add multiple addresses to the blocklist at once.
-     * @param   accounts An array of addresses to be added to the blocklist.
-     */
-    function addManyToBlocklist(address[] calldata accounts) external onlyRole(BLOCK_ROLE) {
-        for (uint256 i; i < accounts.length; i++) {
-            _addToBlocklist(accounts[i]);
-        }
-    }
-
-    /**
-     * @notice  This function is accessible only to accounts with the `BLOCKLIST_ROLE`.
-     * @notice  The address must be currently on the blocklist.
-     * @notice  Emits a `removedFromBlocklist` event upon successful removal.
-     * @dev     Allows the `BLOCKLIST_ROLE` to remove an address from the blocklist.
-     * @param   accounts An array of addresses to be removed from the blocklist.
-     */
-    function removeManyFromBlocklist(address[] calldata accounts) external onlyRole(BLOCK_ROLE) {
-        for (uint256 i; i < accounts.length; i++) {
-            _removeFromBlocklist(accounts[i]);
-        }
-    }
-
-    // ERC1967
-    /**
-     * @notice  This function is called internally to authorize an upgrade.
+     * @notice  Internal function to authorize a contract upgrade.
      * @notice  Only accounts with the `DEFAULT_ADMIN_ROLE` can call this function.
-     * @notice  This function is used to control access to contract upgrades.
-     * @notice  The function does not perform any other action other than checking the role.
-     * @dev     Internal function to authorize an upgrade to a new implementation.
      * @param   newImplementation  The address of the new implementation contract.
      */
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(DEFAULT_ADMIN_ROLE) {}
