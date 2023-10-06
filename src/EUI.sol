@@ -161,7 +161,7 @@ contract EUI is
      * @param   to  The address to which tokens are transferred.
      * @param   amount  The amount of tokens being transferred.
      */
-    function _beforeTokenTransfer(address from, address to, uint256 amount) internal override {}
+    function _beforeTokenTransfer(address from, address to, uint256 amount) internal override whenNotPaused() {}
 
     function transfer(
         address to,
@@ -169,7 +169,6 @@ contract EUI is
     )
         public
         override
-        whenNotPaused()
         onlyAllowed(msg.sender)
         onlyAllowed(to)
         returns (bool)
@@ -184,7 +183,6 @@ contract EUI is
     )
         public
         override
-        whenNotPaused()
         onlyAllowed(from)
         onlyAllowed(to)
         returns (bool)

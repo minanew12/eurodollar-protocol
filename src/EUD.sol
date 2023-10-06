@@ -140,7 +140,6 @@ contract EUD is
     )
         public
         override
-        whenNotPaused()
         notBlocked(msg.sender)
         notBlocked(to)
         returns (bool)
@@ -155,7 +154,6 @@ contract EUD is
     )
         public
         override
-        whenNotPaused()
         notBlocked(from)
         notBlocked(to)
         returns (bool)
