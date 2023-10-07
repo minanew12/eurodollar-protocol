@@ -10,8 +10,8 @@ import {UUPSUpgradeable} from "oz-up/proxy/utils/UUPSUpgradeable.sol";
 import {AccessControlUpgradeable} from "oz-up/access/AccessControlUpgradeable.sol";
 
 /**
- * @author  Rhinefield Technologies Limited
- * @title   EUD - Eurodollar Token
+ * @author Rhinefield Technologies Limited
+ * @title EUD - Eurodollar Token
  */
 
 contract EUD is
@@ -52,6 +52,7 @@ contract EUD is
     /**
      * @notice Disables initializers from being called more than once.
      */
+    /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
@@ -68,7 +69,7 @@ contract EUD is
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
-    // ERC20 Base
+    /// ---------- ERC20 FUNCTIONS ---------- ///
     /**
      * @notice Transfers tokens from msg.sender to a specified recipient.
      * @notice The sender or receiver account must not be on the blocklist.
@@ -120,7 +121,7 @@ contract EUD is
      */
     function _beforeTokenTransfer(address from, address to, uint256 amount) internal override whenNotPaused {}
 
-    // Supply Management
+    /// ---------- SUPPLY MANAGEMENT FUNCTIONS ---------- ///
     /**
      * @notice  Mints new tokens and adds them to the specified account.
      * @notice  This function can only be called by an account with the `MINT_ROLE`.
@@ -142,8 +143,8 @@ contract EUD is
         _burn(from, amount);
     }
 
-    // Token Management Functions
-   /**
+    /// ---------- TOKEN MANAGEMENT FUNCTIONS ---------- ///
+    /**
      * @notice  This function can only be called by an account with the `PAUSE_ROLE`.
      * @notice  Once paused, certain operations are unavailable until the contract is unpaused.
      */
@@ -219,7 +220,7 @@ contract EUD is
     function addToBlocklist(address account) external onlyRole(BLOCK_ROLE) {
         _addToBlocklist(account);
     }
-    
+
     /**
      * @notice  Remove an address from the blocklist.
      * @notice Only callable by accounts with the `BLOCK_ROLE`.
