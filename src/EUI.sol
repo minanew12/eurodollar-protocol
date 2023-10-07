@@ -189,12 +189,12 @@ contract EUI is
         return eudMintAmount;
     }
 
-    /// ---------- ERC4626 FUNCTIONS ---------- /// 
+    /// ---------- ERC4626 FUNCTIONS ---------- ///
     /**
      * @notice Returns the address of the asset contract.
      */
     function asset() external view returns (address) {
-            return address(eud);
+        return address(eud);
     }
 
     /**
@@ -247,7 +247,7 @@ contract EUI is
      * @return uint256 The maximum amount of assets (EUD) that can be deposited.
      */
     function maxDeposit(address) public returns (uint256) {
-        if(paused()) {
+        if (paused()) {
             return 0;
         }
         return type(uint256).max;
@@ -281,7 +281,7 @@ contract EUI is
      * @return uint256 The maximum amount of shares (EUI) that can be minted for a user.
      */
     function maxMint(address) public returns (uint256) {
-        if(paused()) {
+        if (paused()) {
             return 0;
         }
         return type(uint256).max;
@@ -317,7 +317,7 @@ contract EUI is
      * @return uint256 The maximum amount of assets (EUD) that the owner can withdraw based on their share (EUI) balance.
      */
     function maxWithdraw(address owner) public view returns (uint256) {
-        if(paused()) {
+        if (paused()) {
             return 0;
         }
         return convertToAssets(this.balanceOf(owner));
@@ -356,7 +356,7 @@ contract EUI is
      * @return uint256 The maximum amount of shares (EUI) that can be redeemed by the owner.
      */
     function maxRedeem(address owner) public view returns (uint256) {
-        if(paused()) {
+        if (paused()) {
             return 0;
         }
         return this.balanceOf(owner);

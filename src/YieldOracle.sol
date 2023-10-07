@@ -7,17 +7,16 @@ import {Pausable} from "oz/security/Pausable.sol";
 import {AccessControl} from "oz/access/AccessControl.sol";
 import {Math} from "oz/utils/math/Math.sol";
 
-uint256 constant MIN_PRICE = 1e18;
-
 /**
  * @author  Rhinefield Technologies Limited
  * @title   YieldOracle
  * @notice  The YieldOracle contract provides the EUI yield accrual price mechanism.
  */
 contract YieldOracle is Pausable, AccessControl {
-    uint256 public maxPriceIncrease;
-    uint256 public lastUpdate;
-    uint256 public delay;
+    uint256 public constant MIN_PRICE = 1e18; // Minimum EUIEUD price
+    uint256 public maxPriceIncrease; // Guardrail to limit how much the price can be increased in a single update
+    uint256 public lastUpdate; // Timestamp of the last price update
+    uint256 public delay; // Guardrail to limit how often the oracle can be updated
 
     uint256 private _oldPrice;
     uint256 private _currentPrice;
