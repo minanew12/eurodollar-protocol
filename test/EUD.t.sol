@@ -37,6 +37,20 @@ contract EUDTest is Test, Constants {
         assertEq(eud.decimals(), 18);
     }
 
+    function testInitializeNewProxy() public {
+        EUD newEudImplementation = new EUD();
+        ERC1967Proxy newEudProxy = new ERC1967Proxy(
+            address(newEudImplementation),
+            abi.encodeCall(EUD.initialize, ())
+        );
+        EUD newEud = EUD(address(newEudProxy));
+        assertEq(newEud.hasRole(0x00, address(this)), true);
+        assertEq(newEud.symbol(), "EUD");
+        assertEq(newEud.name(), "EuroDollar");
+        assertEq(newEud.decimals(), 18);
+    }
+    
+
     function testMintEud(uint256 amount) public {
         eud.mint(address(this), amount);
         assertEq(eud.balanceOf(address(this)), amount);

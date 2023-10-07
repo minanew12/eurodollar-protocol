@@ -246,7 +246,7 @@ contract EUI is
      * @notice Returns The maximum amount of assets (EUD) that can be deposited.
      * @return uint256 The maximum amount of assets (EUD) that can be deposited.
      */
-    function maxDeposit(address) public returns (uint256) {
+    function maxDeposit(address) public view returns (uint256) {
         if (paused()) {
             return 0;
         }
@@ -270,7 +270,10 @@ contract EUI is
      */
     function deposit(uint256 assets, address receiver) public returns (uint256) {
         require(assets <= maxDeposit(msg.sender), "ERC4626: deposit more than max");
-        uint256 shares = flipToEUI(msg.sender, receiver, assets);
+        uint256 shares = _convertToShares(assets);
+        eud.transferFrom(msg.sender, address(this), assets);
+        eud.burn(address(this), assets);
+        _mint(receiver, shares);
         emit Deposit(msg.sender, receiver, assets, shares);
         return shares;
     }
@@ -280,7 +283,7 @@ contract EUI is
      * @notice Returns The maximum amount of shares (EUI) that can be minted for a user.
      * @return uint256 The maximum amount of shares (EUI) that can be minted for a user.
      */
-    function maxMint(address) public returns (uint256) {
+    function maxMint(address) public view returns (uint256) {
         if (paused()) {
             return 0;
         }
@@ -305,7 +308,9 @@ contract EUI is
     function mint(uint256 shares, address receiver) public returns (uint256) {
         require(shares <= maxMint(msg.sender), "ERC4626: mint more than max");
         uint256 assets = _convertToAssets(shares);
-        flipToEUI(msg.sender, receiver, assets);
+        eud.transferFrom(msg.sender, address(this), assets);
+        eud.burn(address(this), assets);
+        _mint(receiver, shares);
         emit Deposit(msg.sender, receiver, assets, shares);
         return assets;
     }
@@ -342,7 +347,7 @@ contract EUI is
     function withdraw(uint256 assets, address receiver, address owner) public returns (uint256) {
         //require(assets <= maxWithdraw(owner), "ERC4626: withdraw more than max");
         uint256 euiAmount = _convertToShares(assets);
-        require(this.transferFrom(owner, address(this), euiAmount), "EUI transfer failed");
+        this.transferFrom(owner, address(this), euiAmount);
         _burn(address(this), euiAmount);
         eud.mint(receiver, assets);
         emit Withdraw(msg.sender, receiver, owner, assets, euiAmount);
@@ -381,10 +386,9 @@ contract EUI is
     function redeem(uint256 shares, address receiver, address owner) public returns (uint256) {
         require(shares <= maxRedeem(owner), "ERC4626: redeem more than max");
         uint256 assets = convertToAssets(shares);
-        require(this.transferFrom(owner, address(this), shares), "EUI transfer failed");
+        this.transferFrom(owner, address(this), shares);
         _burn(address(this), shares);
         eud.mint(receiver, assets);
-        //uint256 assets = flipToEUD(owner, receiver, shares);
         emit Withdraw(msg.sender, receiver, owner, assets, shares);
         return assets;
     }
