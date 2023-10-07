@@ -5,9 +5,10 @@ pragma solidity ^0.8.21;
 
 import {Test} from "forge-std/Test.sol";
 import {Strings} from "oz/utils/Strings.sol";
-import {YieldOracle, MIN_PRICE} from "../src/YieldOracle.sol";
+import {Constants} from "./Constants.sol";
+import {YieldOracle} from "../src/YieldOracle.sol";
 
-abstract contract YieldOracleInvariants is Test {
+abstract contract YieldOracleInvariants is Test, Constants {
     YieldOracle public yieldOracle;
 
     function invariantMonotonePrices() external {
