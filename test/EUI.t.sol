@@ -530,6 +530,30 @@ contract EUITest is Test, Constants {
         assertEq(eui.balanceOf(receiver), amount.mulDiv(1e18, price, Math.Rounding.Down));
     }
 
+    function testFailFlipToEuiWhilePaused(address owner, address receiver, uint256 amount, uint256 price) public {
+        // Bounds
+        amount = bound(amount, 0, 1e39);
+        price = bound(price, 1e18, 1e39);
+
+        // Assumes
+        vm.assume(owner != address(0) && receiver != address(0));
+
+        // Set Roles
+        eui.addToAllowlist(owner);
+        eui.addToAllowlist(receiver);
+        yieldOracle.adminUpdateCurrentPrice(price); // Current Price
+
+        // Test
+        eud.mint(owner, amount);
+        assertEq(eud.balanceOf(owner), amount);
+        eui.pause();
+        vm.startPrank(owner);
+        eud.approve(address(eui), amount);
+        eui.flipToEUI(owner, receiver, amount);
+        vm.stopPrank();
+        assertEq(eui.balanceOf(receiver), amount.mulDiv(1e18, price, Math.Rounding.Down));
+    }
+
     function testFlipToEud(address owner, address receiver, uint256 amount, uint256 price) public {
         // Bounds
         amount = bound(amount, 0, 1e39);
@@ -596,7 +620,30 @@ contract EUITest is Test, Constants {
         // eui.approve(address(eui), amount); NO APPROVAL
         eui.flipToEUD(owner, receiver, amount);
         vm.stopPrank();
-        //assertEq(eud.balanceOf(receiver), amount.mulDiv(price, 1e18, Math.Rounding.Down));
+    }
+
+    function testFailFlipToEudWhilePaused(address owner, address receiver, uint256 amount, uint256 price) public {
+        // Bounds
+        amount = bound(amount, 0, 1e39);
+        price = bound(price, 1e18, 1e39);
+
+        // Assumes
+        vm.assume(owner != address(0) && receiver != address(0));
+
+        // Setup
+        eui.addToAllowlist(owner);
+        eui.addToAllowlist(receiver);
+        yieldOracle.adminUpdateOldPrice(price);
+
+        // Test
+        eui.mintEUI(owner, amount);
+        assertEq(eui.balanceOf(owner), amount);
+        eui.pause();
+        vm.startPrank(owner);
+        eui.approve(address(eui), amount);
+        eui.flipToEUD(owner, receiver, amount);
+        vm.stopPrank();
+        assertEq(eud.balanceOf(receiver), amount.mulDiv(price, 1e18, Math.Rounding.Down));
     }
 
     function testSetYieldOracle(address newYieldOracle) public {
