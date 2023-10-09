@@ -626,15 +626,24 @@ contract EUITest is Test, Constants {
         assertEq(eui.totalAssets(), yieldOracle.fromEuiToEud(amount));
     }
 
-    function testConvertToShares(uint256 amount) public {
-        eui.mintEUI(address(this), amount);
-        assertEq(eui.convertToShares(amount), amount.mulDiv(1e18, eui.yieldOracle().currentPrice(), Math.Rounding.Down));
+    function testConvertToShares(uint256 amount, uint256 oldPrice, uint256 currentPrice) public {
+        oldPrice = bound(oldPrice, 1e18, 1e37);
+        currentPrice = bound(currentPrice, oldPrice, 1e37);
+        amount = bound(amount, 1, 1e37);
+        yieldOracle.adminUpdateOldPrice(oldPrice);
+        yieldOracle.adminUpdateCurrentPrice(currentPrice);
+        eud.mint(address(this), amount);
+        assertEq(eui.convertToShares(amount), amount.mulDiv(1e18, eui.yieldOracle().currentPrice()));
     }
 
-    function testConvertToAssets(uint256 amount) public {
-        amount = bound(amount, 0, 1e39);
+    function testConvertToAssets(uint256 amount, uint256 oldPrice, uint256 currentPrice) public {
+        oldPrice = bound(oldPrice, 1e18, 1e37);
+        currentPrice = bound(currentPrice, oldPrice, 1e37);
+        amount = bound(amount, 1, 1e37);
+        yieldOracle.adminUpdateOldPrice(oldPrice);
+        yieldOracle.adminUpdateCurrentPrice(currentPrice);
         eui.mintEUI(address(this), amount);
-        assertEq(eui.convertToAssets(amount), amount.mulDiv(eui.yieldOracle().oldPrice(), 1e18, Math.Rounding.Down));
+        assertEq(eui.convertToAssets(amount), amount.mulDiv(eui.yieldOracle().oldPrice(), 1e18));
     }
 
     function testMaxDeposit(address account) public {
@@ -651,10 +660,11 @@ contract EUITest is Test, Constants {
         assertEq(eui.previewDeposit(amount), amount.mulDiv(1e18, eui.yieldOracle().currentPrice(), Math.Rounding.Down));
     }
 
-    function testDeposit(address owner, address receiver, uint256 amount, uint256 price) public {
+    function testDeposit(address owner, address receiver, uint256 amount, uint256 currentPrice, uint256 oldPrice) public {
         //Bounds
         amount = bound(amount, 0, 1e39);
-        price = bound(price, 1e18, 1e39);
+        currentPrice = bound(currentPrice, 1e18, 1e39);
+        oldPrice = bound(oldPrice, currentPrice, 1e39);
 
         // Assumes
         vm.assume(owner != address(0) && receiver != address(0));
@@ -662,7 +672,8 @@ contract EUITest is Test, Constants {
         // Setup
         eui.addToAllowlist(owner);
         eui.addToAllowlist(receiver);
-        yieldOracle.adminUpdateCurrentPrice(price); // Current Price
+        yieldOracle.adminUpdateCurrentPrice(currentPrice); // Current Price
+        yieldOracle.adminUpdateOldPrice(oldPrice);
 
         // Test
         eud.mint(owner, amount);
@@ -671,13 +682,14 @@ contract EUITest is Test, Constants {
         eud.approve(address(eui), amount);
         eui.deposit(amount, receiver);
         vm.stopPrank();
-        assertEq(eui.balanceOf(receiver), amount.mulDiv(1e18, price, Math.Rounding.Down));
+        assertEq(eui.balanceOf(receiver), amount.mulDiv(1e18, currentPrice, Math.Rounding.Down));
     }
 
-    function testFailDepositTooManyTokens(address owner, address receiver, uint256 amount, uint256 price) public {
+    function testFailDepositTooManyTokens(address owner, address receiver, uint256 amount, uint256 currentPrice, uint256 oldPrice) public {
         //Bounds
         amount = bound(amount, 0, 1e39);
-        price = bound(price, 1e18, 1e39);
+        currentPrice = bound(currentPrice, 1e18, 1e39);
+        oldPrice = bound(oldPrice, currentPrice, 1e39);
 
         // Assumes
         vm.assume(owner != address(0) && receiver != address(0));
@@ -685,7 +697,8 @@ contract EUITest is Test, Constants {
         // Setup
         eui.addToAllowlist(owner);
         eui.addToAllowlist(receiver);
-        yieldOracle.adminUpdateCurrentPrice(price); // Current Price
+        yieldOracle.adminUpdateCurrentPrice(currentPrice); // Current Price
+        yieldOracle.adminUpdateOldPrice(oldPrice);
 
         // Test
         eud.mint(owner, amount);
@@ -694,7 +707,7 @@ contract EUITest is Test, Constants {
         eud.approve(address(eui), amount + 1);
         eui.deposit(amount + 1, receiver);
         vm.stopPrank();
-        assertEq(eui.balanceOf(receiver), amount.mulDiv(1e18, price, Math.Rounding.Down));
+        assertEq(eui.balanceOf(receiver), amount.mulDiv(1e18, currentPrice, Math.Rounding.Down));
     }
 
     function testMaxMint(address account) public {
@@ -711,11 +724,11 @@ contract EUITest is Test, Constants {
         assertEq(eui.previewMint(amount), amount.mulDiv(eui.yieldOracle().oldPrice(), 1e18, Math.Rounding.Down));
     }
 
-    function testMint(address owner, address receiver, uint256 amount, uint256 price) public {
+    function testMint(address owner, address receiver, uint256 amount, uint256 currentPrice, uint256 oldPrice) public {
         //Bounds
         amount = bound(amount, 0, 1e39);
-        price = bound(price, 1e18, 1e39);
-
+        oldPrice = bound(oldPrice, 1e18, 1e39);
+        currentPrice = bound(currentPrice, oldPrice, 1e39);
         // Assumes
         vm.assume(owner != address(0) && receiver != address(0));
 
@@ -723,7 +736,8 @@ contract EUITest is Test, Constants {
         eui.addToAllowlist(owner);
         eui.addToAllowlist(receiver);
         eui.addToAllowlist(address(eui));
-        yieldOracle.adminUpdateCurrentPrice(price);
+        yieldOracle.adminUpdateCurrentPrice(currentPrice);
+        yieldOracle.adminUpdateOldPrice(oldPrice);
 
         // Test
         uint256 eudAmount = yieldOracle.fromEuiToEud(amount);
@@ -760,30 +774,6 @@ contract EUITest is Test, Constants {
         eui.mint(amount, receiver);
         vm.stopPrank();
     }
-    // function testMint(address owner, address receiver, uint256 amount, uint256 price) public {
-    //     //Bounds
-    //     amount = bound(amount, 0, 1e39);
-    //     price = bound(price, 1e18, 1e39);
-
-    //     // Assumes
-    //     vm.assume(owner != address(0) && receiver != address(0));
-
-    //     // Setup
-    //     eui.addToAllowlist(owner);
-    //     eui.addToAllowlist(receiver);
-    //     eui.addToAllowlist(address(eui));
-    //     yieldOracle.adminUpdateCurrentPrice(price);
-
-    //     // Test
-    //     uint256 eudAmount = yieldOracle.fromEuiToEud(amount);
-    //     eud.mint(owner, eudAmount);
-    //     assertEq(eud.balanceOf(owner), eudAmount);
-    //     vm.startPrank(owner);
-    //     eud.approve(address(eui), eudAmount);
-    //     eui.mint(amount, receiver);
-    //     vm.stopPrank();
-    //     assertEq(eui.balanceOf(receiver), amount.mulDiv(1e18, price, Math.Rounding.Down));
-    // }
 
     function testMaxWithdraw(address account, uint256 amount, uint256 price) public {
         amount = bound(amount, 0, 1e39);
@@ -823,7 +813,7 @@ contract EUITest is Test, Constants {
         // Bounds
         amount = bound(amount, 0, 1e39);
         oldPrice = bound(oldPrice, 1e18, 1e39);
-        currentPrice = bound(currentPrice, 1e18, 1e39);
+        currentPrice = bound(currentPrice, oldPrice, 1e39);
 
         // Assumes
         vm.assume(owner != address(0) && receiver != address(0));
@@ -835,49 +825,15 @@ contract EUITest is Test, Constants {
         yieldOracle.adminUpdateCurrentPrice(currentPrice);
 
         // Test
-        uint256 euiAmount = yieldOracle.fromEudToEui(amount);
-        eui.mintEUI(owner, euiAmount);
-        assertEq(eui.balanceOf(owner), euiAmount);
+        uint256 eudAmount = yieldOracle.fromEuiToEud(amount);
+        eui.mintEUI(owner, amount);
+        assertEq(eui.balanceOf(owner), amount);
         vm.startPrank(owner);
-        eui.approve(address(eui), euiAmount);
-        eui.withdraw(amount, receiver, owner);
+        eui.approve(address(eui), amount);
+        eui.withdraw(eudAmount, receiver, owner);
         vm.stopPrank();
-        assertEq(eud.balanceOf(receiver), amount);
+        assertEq(eud.balanceOf(receiver), eudAmount);
     }
-
-    // function testWithdraw(
-    //     address owner,
-    //     address receiver,
-    //     uint256 amount,
-    //     uint256 oldPrice,
-    //     uint256 currentPrice
-    // )
-    //     public
-    // {
-    //     // Bounds
-    //     amount = bound(amount, 0, 1e39);
-    //     oldPrice = bound(oldPrice, 1e18, 1e39);
-    //     currentPrice = bound(currentPrice, 1e18, 1e39);
-
-    //     // Assumes
-    //     vm.assume(owner != address(0) && receiver != address(0));
-
-    //     // Setup
-    //     eui.addToAllowlist(owner);
-    //     eui.addToAllowlist(receiver);
-    //     yieldOracle.adminUpdateOldPrice(oldPrice);
-    //     yieldOracle.adminUpdateCurrentPrice(currentPrice);
-
-    //     // Test
-    //     uint256 eudAmount = yieldOracle.fromEuiToEud(amount);
-    //     eui.mintEUI(owner, amount);
-    //     assertEq(eui.balanceOf(owner), amount);
-    //     vm.startPrank(owner);
-    //     eui.approve(address(eui), amount);
-    //     eui.withdraw(eudAmount, receiver, owner);
-    //     vm.stopPrank();
-    //     assertEq(eud.balanceOf(receiver), eudAmount);
-    // }
 
     function testMaxRedeem(address account, uint256 amount) public {
         vm.assume(account != address(0));

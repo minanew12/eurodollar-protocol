@@ -345,7 +345,7 @@ contract EUI is
      * @return uint256 The amount of assets (EUD) to be withdrawn.
      */
     function withdraw(uint256 assets, address receiver, address owner) public returns (uint256) {
-        //require(assets <= maxWithdraw(owner), "ERC4626: withdraw more than max");
+        require(assets <= maxWithdraw(owner), "ERC4626: withdraw more than max");
         uint256 euiAmount = _convertToShares(assets);
         this.transferFrom(owner, address(this), euiAmount);
         _burn(address(this), euiAmount);
