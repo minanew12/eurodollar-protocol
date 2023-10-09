@@ -5,10 +5,12 @@ pragma solidity ^0.8.21;
 
 import {Test} from "forge-std/Test.sol";
 import {Strings} from "oz/utils/Strings.sol";
+import {Math} from "oz/utils/math/Math.sol";
 import {Constants} from "./Constants.sol";
 import {YieldOracle} from "../src/YieldOracle.sol";
 
 abstract contract YieldOracleInvariants is Test, Constants {
+
     YieldOracle public yieldOracle;
 
     function invariantMonotonePrices() external {
@@ -39,6 +41,8 @@ abstract contract YieldOracleInvariants is Test, Constants {
 }
 
 contract YieldOracleTest is Test, YieldOracleInvariants {
+    using Math for uint256;
+
     function setUp() public {
         yieldOracle = new YieldOracle();
     }
@@ -216,16 +220,22 @@ contract YieldOracleTest is Test, YieldOracleInvariants {
         yieldOracle.adminUpdateOldPrice(price);
     }
 
-    function testFromEudtoEui() public {
-        yieldOracle.adminUpdateCurrentPrice(1.25e18);
-        uint256 amount = 1e18;
-        assertEqDecimal(yieldOracle.fromEudToEui(amount), 0.8e18, 18); // 1.00 / 1.25 = 0.8
+    function testFromEudtoEui(uint256 amount, uint256 oldPrice, uint256 currentPrice) public {
+        oldPrice = bound(oldPrice, 1e18, 1e37);
+        currentPrice = bound(currentPrice, oldPrice, 1e37);
+        amount = bound(amount, 1, 1e37);
+        yieldOracle.adminUpdateOldPrice(oldPrice);
+        yieldOracle.adminUpdateCurrentPrice(currentPrice);
+        assertEq(yieldOracle.fromEudToEui(amount), Math.mulDiv(amount, 1e18, currentPrice));
     }
 
-    function testFromEuiToEud() public {
-        yieldOracle.adminUpdateOldPrice(1.25e18);
-        uint256 amount = 1e18;
-        assertEqDecimal(yieldOracle.fromEuiToEud(amount), 1.25e18, 18); // 1.00 * 1.25 = 1.25
+    function testFromEuiToEud(uint256 amount, uint256 oldPrice, uint256 currentPrice) public {
+        oldPrice = bound(oldPrice, 1e18, 1e37);
+        currentPrice = bound(currentPrice, oldPrice, 1e37);
+        amount = bound(amount, 1, 1e37);
+        yieldOracle.adminUpdateOldPrice(oldPrice);
+        yieldOracle.adminUpdateCurrentPrice(currentPrice);
+        assertEq(yieldOracle.fromEuiToEud(amount), Math.mulDiv(amount, oldPrice, 1e18));
     }
 
     /// forge-config: default.fuzz.runs = 2048
