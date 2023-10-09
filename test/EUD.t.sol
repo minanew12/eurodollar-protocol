@@ -49,7 +49,6 @@ contract EUDTest is Test, Constants {
         assertEq(newEud.name(), "EuroDollar");
         assertEq(newEud.decimals(), 18);
     }
-    
 
     function testMintEud(uint256 amount) public {
         eud.mint(address(this), amount);

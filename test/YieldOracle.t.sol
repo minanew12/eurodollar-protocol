@@ -10,7 +10,6 @@ import {Constants} from "./Constants.sol";
 import {YieldOracle} from "../src/YieldOracle.sol";
 
 abstract contract YieldOracleInvariants is Test, Constants {
-
     YieldOracle public yieldOracle;
 
     function invariantMonotonePrices() external {

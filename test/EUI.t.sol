@@ -664,7 +664,15 @@ contract EUITest is Test, Constants {
         assertEq(eui.previewDeposit(amount), amount.mulDiv(1e18, eui.yieldOracle().currentPrice(), Math.Rounding.Down));
     }
 
-    function testDeposit(address owner, address receiver, uint256 amount, uint256 currentPrice, uint256 oldPrice) public {
+    function testDeposit(
+        address owner,
+        address receiver,
+        uint256 amount,
+        uint256 currentPrice,
+        uint256 oldPrice
+    )
+        public
+    {
         //Bounds
         amount = bound(amount, 0, 1e39);
         currentPrice = bound(currentPrice, 1e18, 1e39);
@@ -689,7 +697,15 @@ contract EUITest is Test, Constants {
         assertEq(eui.balanceOf(receiver), amount.mulDiv(1e18, currentPrice, Math.Rounding.Down));
     }
 
-    function testFailDepositTooManyTokens(address owner, address receiver, uint256 amount, uint256 currentPrice, uint256 oldPrice) public {
+    function testFailDepositTooManyTokens(
+        address owner,
+        address receiver,
+        uint256 amount,
+        uint256 currentPrice,
+        uint256 oldPrice
+    )
+        public
+    {
         //Bounds
         amount = bound(amount, 0, 1e39);
         currentPrice = bound(currentPrice, 1e18, 1e39);
