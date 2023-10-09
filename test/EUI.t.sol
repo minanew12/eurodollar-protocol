@@ -655,7 +655,11 @@ contract EUITest is Test, Constants {
         assertEq(eui.maxDeposit(account), 0);
     }
 
-    function testPreviewDeposit(uint256 amount) public {
+    function testPreviewDeposit(uint256 amount, uint256 oldPrice, uint256 currentPrice) public {
+        oldPrice = bound(oldPrice, 1e18, 1e37);
+        currentPrice = bound(currentPrice, oldPrice, 1e37);
+        yieldOracle.adminUpdateOldPrice(oldPrice);
+        yieldOracle.adminUpdateCurrentPrice(currentPrice);
         amount = bound(amount, 0, 1e39);
         assertEq(eui.previewDeposit(amount), amount.mulDiv(1e18, eui.yieldOracle().currentPrice(), Math.Rounding.Down));
     }
@@ -719,7 +723,11 @@ contract EUITest is Test, Constants {
         assertEq(eui.maxMint(account), 0);
     }
 
-    function testPreviewMint(uint256 amount) public {
+    function testPreviewMint(uint256 amount, uint256 oldPrice, uint256 currentPrice) public {
+        oldPrice = bound(oldPrice, 1e18, 1e37);
+        currentPrice = bound(currentPrice, oldPrice, 1e37);
+        yieldOracle.adminUpdateOldPrice(oldPrice);
+        yieldOracle.adminUpdateCurrentPrice(currentPrice);
         amount = bound(amount, 0, 1e39);
         assertEq(eui.previewMint(amount), amount.mulDiv(eui.yieldOracle().oldPrice(), 1e18, Math.Rounding.Down));
     }
@@ -775,14 +783,16 @@ contract EUITest is Test, Constants {
         vm.stopPrank();
     }
 
-    function testMaxWithdraw(address account, uint256 amount, uint256 price) public {
+    function testMaxWithdraw(address account, uint256 amount, uint256 oldPrice, uint256 currentPrice) public {
+        oldPrice = bound(oldPrice, 1e18, 1e37);
+        currentPrice = bound(currentPrice, oldPrice, 1e37);
+        yieldOracle.adminUpdateOldPrice(oldPrice);
+        yieldOracle.adminUpdateCurrentPrice(currentPrice);
         amount = bound(amount, 0, 1e39);
-        price = bound(price, 1e18, 1e39);
-        yieldOracle.adminUpdateOldPrice(price);
         vm.assume(account != address(0));
         eui.addToAllowlist(account);
         eui.mintEUI(account, amount);
-        assertEq(eui.maxWithdraw(account), amount.mulDiv(price, 1e18, Math.Rounding.Down));
+        assertEq(eui.maxWithdraw(account), amount.mulDiv(oldPrice, 1e18, Math.Rounding.Down));
     }
 
     function testMaxWithdrawPaused(address account, uint256 amount, uint256 price) public {
