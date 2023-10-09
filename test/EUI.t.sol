@@ -806,7 +806,11 @@ contract EUITest is Test, Constants {
         assertEq(eui.maxWithdraw(account), 0);
     }
 
-    function testPreviewWithdraw(uint256 amount) public {
+    function testPreviewWithdraw(uint256 amount, uint256 oldPrice, uint256 currentPrice) public {
+        oldPrice = bound(oldPrice, 1e18, 1e37);
+        currentPrice = bound(currentPrice, oldPrice, 1e37);
+        yieldOracle.adminUpdateOldPrice(oldPrice);
+        yieldOracle.adminUpdateCurrentPrice(currentPrice);
         amount = bound(amount, 0, 1e39);
         assertEq(eui.previewWithdraw(amount), amount.mulDiv(1e18, yieldOracle.currentPrice(), Math.Rounding.Down));
     }
@@ -861,7 +865,11 @@ contract EUITest is Test, Constants {
         assertEq(eui.maxRedeem(account), 0);
     }
 
-    function testPreviewRedeem(uint256 amount) public {
+    function testPreviewRedeem(uint256 amount, uint256 oldPrice, uint256 currentPrice) public {
+        oldPrice = bound(oldPrice, 1e18, 1e37);
+        currentPrice = bound(currentPrice, oldPrice, 1e37);
+        yieldOracle.adminUpdateOldPrice(oldPrice);
+        yieldOracle.adminUpdateCurrentPrice(currentPrice);
         amount = bound(amount, 0, 1e39);
         assertEq(eui.previewRedeem(amount), amount.mulDiv(eui.yieldOracle().oldPrice(), 1e18, Math.Rounding.Down));
     }
