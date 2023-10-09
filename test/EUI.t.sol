@@ -975,7 +975,7 @@ contract EUITest is Test, Constants {
         assertEq(eui.balanceOf(owner), amount);
         vm.startPrank(owner);
         eui.approve(address(eui), amount);
-        eui.withdraw(eudAmount+1, receiver, owner);
+        eui.withdraw(eudAmount + 1, receiver, owner);
         vm.stopPrank();
         assertEq(eud.balanceOf(receiver), eudAmount);
     }

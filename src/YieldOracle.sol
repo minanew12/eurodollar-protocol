@@ -138,7 +138,7 @@ contract YieldOracle is Pausable, AccessControl {
     function adminUpdateCurrentPrice(uint256 price) external onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
         require(price >= MIN_PRICE, "YieldOracle: price must be greater than or equal to MIN_PRICE");
         require(price >= oldPrice(), "YieldOracle: price must be greater than or equal to old price");
-        
+
         if (paused()) {
             _currentPricePaused = price;
         } else {

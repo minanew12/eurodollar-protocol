@@ -213,11 +213,11 @@ contract YieldOracleTest is Test, YieldOracleInvariants {
     }
 
     function testAdminSetCurrentPriceBelowOldPrice(uint256 price) public {
-        price = bound(price, MIN_PRICE+1, 1e37); // setting MIN_PRICE+1 to avoid revert for currentPrice < MIN_PRICE
+        price = bound(price, MIN_PRICE + 1, 1e37); // setting MIN_PRICE+1 to avoid revert for currentPrice < MIN_PRICE
         yieldOracle.adminUpdateOldPrice(price);
 
         vm.expectRevert("YieldOracle: price must be greater than or equal to old price");
-        yieldOracle.adminUpdateCurrentPrice(price-1);
+        yieldOracle.adminUpdateCurrentPrice(price - 1);
     }
 
     function testAdminSetOldPriceBelowLimit(uint256 price) public {
