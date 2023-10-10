@@ -577,7 +577,15 @@ contract EUITest is Test, Constants {
         assertEq(eud.balanceOf(receiver), amount.mulDiv(price, 1e18, Math.Rounding.Down));
     }
 
-    function testFlipToEudAttack(address owner, address receiver, uint256 amount, uint256 price, address attacker) public {
+    function testFlipToEudAttack(
+        address owner,
+        address receiver,
+        uint256 amount,
+        uint256 price,
+        address attacker
+    )
+        public
+    {
         // Bounds
         amount = bound(amount, 0, 1e39);
         price = bound(price, 1e18, 1e39);

@@ -180,7 +180,8 @@ contract EUI is
      * @param   owner  The address from which the EUI tokens will be burned.
      * @return  uint256  Amount of EUD tokens minted.
      */
-    function flipToEUD(address owner, address receiver, uint256 euiAmount) public whenNotPaused returns (uint256) { // Same as redeem.
+    function flipToEUD(address owner, address receiver, uint256 euiAmount) public whenNotPaused returns (uint256) {
+        // Same as redeem.
         uint256 eudMintAmount = yieldOracle.fromEuiToEud(euiAmount);
         _spendAllowance(owner, msg.sender, euiAmount);
         _burn(owner, euiAmount);
@@ -345,7 +346,7 @@ contract EUI is
      * @return uint256 The amount of shares (EUI) to be withdrawn.
      */
     function withdraw(uint256 assets, address receiver, address owner) public onlyAllowed(owner) returns (uint256) {
-        require(assets <= maxWithdraw(owner), "ERC4626: withdraw more than max"); 
+        require(assets <= maxWithdraw(owner), "ERC4626: withdraw more than max");
         uint256 shares = _convertToShares(assets);
         _spendAllowance(owner, msg.sender, shares);
         _burn(owner, shares);
