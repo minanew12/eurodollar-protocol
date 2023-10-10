@@ -25,11 +25,14 @@ contract EUI is
     // @notice YieldOracle contract used to provide EUD/EUI pricing.
     IYieldOracle public yieldOracle;
     // @notice EUD token contract.
-    IEUD public eud;
+    IEUD public immutable eud;
     // @notice Allowlist contains addresses that are allowed to send or receive tokens.
     mapping(address => bool) public allowlist;
     // @notice Mapping of frozen balances that cannot be transferred.
     mapping(address => uint256) public frozenBalances;
+
+    mapping(address => mapping(address => uint256)) public flipToEuiAllowance;
+    mapping(address => mapping(address => uint256)) public flipToEudAllowance;
 
     // Roles
     bytes32 public constant PAUSE_ROLE = keccak256("PAUSE_ROLE");
@@ -64,7 +67,8 @@ contract EUI is
      * @notice Disables initializers from being called more than once.
      */
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() {
+    constructor(address eudAddress) {
+        eud = IEUD(eudAddress);
         _disableInitializers();
     }
 
@@ -72,14 +76,13 @@ contract EUI is
      * @notice  Initializes EUI token and permissions.
      * @notice  This function is called only once during the contract deployment process.
      */
-    function initialize(address eudAddress, address yieldOracleAddress) public initializer {
+    function initialize(address yieldOracleAddress) public initializer {
         __ERC20_init("EuroDollar Invest", "EUI");
         __Pausable_init();
         __ERC20Permit_init("EuroDollar Invest");
         __UUPSUpgradeable_init();
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         yieldOracle = IYieldOracle(yieldOracleAddress);
-        eud = IEUD(eudAddress);
     }
 
     /// ---------- ERC20 FUNCTIONS ---------- ///
@@ -142,7 +145,7 @@ contract EUI is
      * @param   to  The address to receive the newly minted tokens.
      * @param   amount  The amount of tokens to mint to the account.
      */
-    function mintEUI(address to, uint256 amount) public onlyRole(MINT_ROLE) {
+    function mintEUI(address to, uint256 amount) public onlyRole(MINT_ROLE) onlyAllowed(to) {
         _mint(to, amount);
     }
 
@@ -161,7 +164,7 @@ contract EUI is
      * @notice  Converts the specified amount of EUD tokens to EUI tokens using the current price.
      * @param   eudAmount  The amount of EUD tokens to be converted to EUI tokens.
      * @param   receiver  The address to receive the minted EUI tokens.
-     * @param   owner  The address from which the EUI tokens will be burned.
+     * @param   owner  The address from which the EUD tokens will be burned.
      * @return  uint256  Amount of EUI tokens minted.
      */
     function flipToEUI(address owner, address receiver, uint256 eudAmount) public whenNotPaused returns (uint256) {
@@ -180,10 +183,10 @@ contract EUI is
      * @param   owner  The address from which the EUI tokens will be burned.
      * @return  uint256  Amount of EUD tokens minted.
      */
-    function flipToEUD(address owner, address receiver, uint256 euiAmount) public whenNotPaused returns (uint256) {
+    function flipToEUD(address owner, address receiver, uint256 euiAmount) public whenNotPaused returns (uint256) { // Same as redeem.
         uint256 eudMintAmount = yieldOracle.fromEuiToEud(euiAmount);
-        this.transferFrom(owner, address(this), euiAmount);
-        _burn(address(this), euiAmount);
+        _spendAllowance(owner, msg.sender, euiAmount);
+        _burn(owner, euiAmount);
         eud.mint(receiver, eudMintAmount);
         emit FlippedToEUD(msg.sender, euiAmount, eudMintAmount);
         return eudMintAmount;
@@ -271,7 +274,7 @@ contract EUI is
     function deposit(uint256 assets, address receiver) public returns (uint256) {
         require(assets <= maxDeposit(msg.sender), "ERC4626: deposit more than max");
         uint256 shares = _convertToShares(assets);
-        eud.transferFrom(msg.sender, address(this), assets);
+        eud.transferFrom(msg.sender, address(this), assets); // Consider burn directly from sender with allowance
         eud.burn(address(this), assets);
         _mint(receiver, shares);
         emit Deposit(msg.sender, receiver, assets, shares);
@@ -342,16 +345,16 @@ contract EUI is
      * @param assets The amount of assets (EUD) to be withdrawn.
      * @param receiver The address that will receive the assets (EUD) upon withdrawal.
      * @param owner The address holding the shares (EUI) to be redeemed.
-     * @return uint256 The amount of assets (EUD) to be withdrawn.
+     * @return uint256 The amount of shares (EUI) to be withdrawn.
      */
-    function withdraw(uint256 assets, address receiver, address owner) public returns (uint256) {
-        require(assets <= maxWithdraw(owner), "ERC4626: withdraw more than max");
-        uint256 euiAmount = _convertToShares(assets);
-        this.transferFrom(owner, address(this), euiAmount);
-        _burn(address(this), euiAmount);
+    function withdraw(uint256 assets, address receiver, address owner) public onlyAllowed(owner) returns (uint256) {
+        require(assets <= maxWithdraw(owner), "ERC4626: withdraw more than max"); 
+        uint256 shares = _convertToShares(assets);
+        _spendAllowance(owner, msg.sender, shares);
+        _burn(owner, shares);
         eud.mint(receiver, assets);
-        emit Withdraw(msg.sender, receiver, owner, assets, euiAmount);
-        return assets;
+        emit Withdraw(msg.sender, receiver, owner, assets, shares);
+        return shares;
     }
 
     // Redeem
@@ -383,11 +386,11 @@ contract EUI is
      * @param owner The address of the account that owns the shares (EUI) being redeemed.
      * @return uint256 The amount of assets (EUD) that have been received.
      */
-    function redeem(uint256 shares, address receiver, address owner) public returns (uint256) {
+    function redeem(uint256 shares, address receiver, address owner) public onlyAllowed(owner) returns (uint256) {
         require(shares <= maxRedeem(owner), "ERC4626: redeem more than max");
         uint256 assets = convertToAssets(shares);
-        this.transferFrom(owner, address(this), shares);
-        _burn(address(this), shares);
+        _spendAllowance(owner, msg.sender, shares);
+        _burn(owner, shares);
         eud.mint(receiver, assets);
         emit Withdraw(msg.sender, receiver, owner, assets, shares);
         return assets;
@@ -401,15 +404,6 @@ contract EUI is
      */
     function setYieldOracle(address yieldOracleAddress) external onlyRole(DEFAULT_ADMIN_ROLE) {
         yieldOracle = IYieldOracle(yieldOracleAddress);
-    }
-
-    /**
-     * @notice Sets the EUD token contract address.
-     * @notice Can only be called by accounts with DEFAULT_ADMIN_ROLE.
-     * @param eudAddress The address of the EUD token contract.
-     */
-    function setEud(address eudAddress) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        eud = IEUD(eudAddress);
     }
 
     /**

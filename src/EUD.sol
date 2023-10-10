@@ -129,7 +129,7 @@ contract EUD is
      * @param   to  The address to receive the newly minted tokens.
      * @param   amount  The amount of tokens to mint to the account.
      */
-    function mint(address to, uint256 amount) public onlyRole(MINT_ROLE) {
+    function mint(address to, uint256 amount) public onlyRole(MINT_ROLE) notBlocked(to) {
         _mint(to, amount);
     }
 
@@ -139,7 +139,7 @@ contract EUD is
      * @param   from  The address from which tokens will be burned.
      * @param   amount  The amount of tokens to be burned.
      */
-    function burn(address from, uint256 amount) public onlyRole(BURN_ROLE) {
+    function burn(address from, uint256 amount) public onlyRole(BURN_ROLE) notBlocked(from) {
         _burn(from, amount);
     }
 

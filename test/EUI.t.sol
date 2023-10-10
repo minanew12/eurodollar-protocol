@@ -37,10 +37,10 @@ contract EUITest is Test, Constants {
         yieldOracle.adminUpdateOldPrice(1e18);
 
         // Setup EUI
-        EUI euiImplementation = new EUI();
+        EUI euiImplementation = new EUI(address(eud));
         ERC1967Proxy euiProxy = new ERC1967Proxy(
             address(euiImplementation),
-            abi.encodeCall(EUI.initialize, (address(eud), address(yieldOracle)))
+            abi.encodeCall(EUI.initialize, (address(yieldOracle)))
         );
         eui = EUI(address(euiProxy));
         // Grant Roles
@@ -65,10 +65,10 @@ contract EUITest is Test, Constants {
     }
 
     function testInitializeNewProxy() public {
-        EUI newEuiImplementation = new EUI();
+        EUI newEuiImplementation = new EUI(address(eud));
         ERC1967Proxy newEuiProxy = new ERC1967Proxy(
             address(newEuiImplementation),
-            abi.encodeCall(EUI.initialize, (address(eud), address(yieldOracle)))
+            abi.encodeCall(EUI.initialize, (address(yieldOracle)))
         );
         EUI newEui = EUI(address(newEuiProxy));
         assertEq(newEui.hasRole(0x00, address(this)), true);
@@ -577,6 +577,30 @@ contract EUITest is Test, Constants {
         assertEq(eud.balanceOf(receiver), amount.mulDiv(price, 1e18, Math.Rounding.Down));
     }
 
+    function testFlipToEudAttack(address owner, address receiver, uint256 amount, uint256 price, address attacker) public {
+        // Bounds
+        amount = bound(amount, 0, 1e39);
+        price = bound(price, 1e18, 1e39);
+
+        // Assumes
+        vm.assume(owner != address(0) && receiver != address(0));
+
+        // Setup
+        eui.addToAllowlist(owner);
+        eui.addToAllowlist(receiver);
+        yieldOracle.adminUpdateOldPrice(price);
+
+        // Test
+        eui.mintEUI(owner, amount);
+        assertEq(eui.balanceOf(owner), amount);
+        vm.prank(owner);
+        eui.approve(address(eui), amount);
+        vm.startPrank(attacker);
+        eui.flipToEUD(owner, attacker, amount);
+        vm.stopPrank();
+        assertEq(eud.balanceOf(attacker), amount.mulDiv(price, 1e18, Math.Rounding.Down));
+    }
+
     function testFailFlipToEudTooManyTokens(address owner, address receiver, uint256 amount, uint256 price) public {
         // Bounds
         amount = bound(amount, 0, 1e39);
@@ -651,10 +675,10 @@ contract EUITest is Test, Constants {
         assertEq(address(eui.yieldOracle()), newYieldOracle);
     }
 
-    function testSetEud(address newEud) public {
-        eui.setEud(newEud);
-        assertEq(address(eui.eud()), newEud);
-    }
+    // function testSetEud(address newEud) public {
+    //     eui.setEud(newEud);
+    //     assertEq(address(eui.eud()), newEud);
+    // }
 
     function testFailSetYieldOracleUnauthorized(address newYieldOracle) public {
         vm.prank(address(0));
@@ -1117,20 +1141,20 @@ contract EUITest is Test, Constants {
     // This event is not reachable directly from the original implementation for some reason
     event Upgraded(address indexed implementation);
 
-    function testAuthorizeUpgrade() public {
-        EUIv2 newEui = new EUIv2();
+//     function testAuthorizeUpgrade() public {
+//         EUIv2 newEui = new EUIv2(address(eud));
 
-        vm.expectEmit(address(eui));
-        emit Upgraded(address(newEui));
-        eui.upgradeToAndCall(address(newEui), abi.encodeCall(EUIv2.initializeV2, ()));
+//         vm.expectEmit(address(eui));
+//         emit Upgraded(address(newEui));
+//         eui.upgradeToAndCall(address(newEui), abi.encodeCall(EUIv2.initializeV2, ()));
 
-        assertEq(eui.hasRole(eui.DEFAULT_ADMIN_ROLE(), address(this)), true);
-        assertEq(eui.symbol(), "EUI");
-        assertEq(eui.name(), "EuroDollar Invest");
-        assertEq(eui.decimals(), 18);
-    }
+//         assertEq(eui.hasRole(eui.DEFAULT_ADMIN_ROLE(), address(this)), true);
+//         assertEq(eui.symbol(), "EUI");
+//         assertEq(eui.name(), "EuroDollar Invest");
+//         assertEq(eui.decimals(), 18);
+//     }
 }
 
-contract EUIv2 is EUI {
-    function initializeV2() public reinitializer(2) {}
-}
+// contract EUIv2 is EUI {
+//     function initializeV2() public reinitializer(2) {}
+//

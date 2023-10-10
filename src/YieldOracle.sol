@@ -18,8 +18,8 @@ contract YieldOracle is Pausable, AccessControl {
     uint256 public lastUpdate; // Timestamp of the last price update
     uint256 public delay; // Guardrail to limit how often the oracle can be updated
 
-    uint256 private _oldPrice;
-    uint256 private _currentPrice;
+    uint256 private _oldPrice; // When we go from EUI to EUD
+    uint256 private _currentPrice; // When we go from EUD to EUI
 
     // These next two are used as a gas optimisation to avoid the pause check in the "hot"
     // convert functions
@@ -37,7 +37,7 @@ contract YieldOracle is Pausable, AccessControl {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _oldPrice = MIN_PRICE;
         _currentPrice = MIN_PRICE;
-        maxPriceIncrease = 1e17;
+        maxPriceIncrease = 1e17; // 0.1
         delay = 1 hours;
         lastUpdate = block.timestamp;
     }
@@ -103,7 +103,7 @@ contract YieldOracle is Pausable, AccessControl {
         // and the price increase check requires the delta to be positive,
         // we can simply use the currentPrice_ here to compare
         require(newPrice >= currentPrice_, "YieldOracle: price must be greater than or equal to the current price");
-        require(newPrice - currentPrice_ <= maxPriceIncrease, "YieldOracle: price increase exceeds maximum allowed");
+        require(newPrice - currentPrice_ <= maxPriceIncrease, "YieldOracle: price increase exceeds maximum allowed"); // Consider percentage check
         lastUpdate = block.timestamp;
         _oldPrice = currentPrice_;
         _currentPrice = newPrice;
