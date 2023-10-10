@@ -1141,20 +1141,22 @@ contract EUITest is Test, Constants {
     // This event is not reachable directly from the original implementation for some reason
     event Upgraded(address indexed implementation);
 
-//     function testAuthorizeUpgrade() public {
-//         EUIv2 newEui = new EUIv2(address(eud));
+    function testAuthorizeUpgrade() public {
+        EUIv2 newEui = new EUIv2(address(eud));
 
-//         vm.expectEmit(address(eui));
-//         emit Upgraded(address(newEui));
-//         eui.upgradeToAndCall(address(newEui), abi.encodeCall(EUIv2.initializeV2, ()));
+        vm.expectEmit(address(eui));
+        emit Upgraded(address(newEui));
+        eui.upgradeToAndCall(address(newEui), abi.encodeCall(EUIv2.initializeV2, ()));
 
-//         assertEq(eui.hasRole(eui.DEFAULT_ADMIN_ROLE(), address(this)), true);
-//         assertEq(eui.symbol(), "EUI");
-//         assertEq(eui.name(), "EuroDollar Invest");
-//         assertEq(eui.decimals(), 18);
-//     }
+        assertEq(eui.hasRole(eui.DEFAULT_ADMIN_ROLE(), address(this)), true);
+        assertEq(eui.symbol(), "EUI");
+        assertEq(eui.name(), "EuroDollar Invest");
+        assertEq(eui.decimals(), 18);
+    }
 }
 
-// contract EUIv2 is EUI {
-//     function initializeV2() public reinitializer(2) {}
-//
+contract EUIv2 is EUI {
+    constructor(address eud) EUI(eud) {}
+
+    function initializeV2() public reinitializer(2) {}
+}
