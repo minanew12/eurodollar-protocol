@@ -31,9 +31,6 @@ contract EUI is
     // @notice Mapping of frozen balances that cannot be transferred.
     mapping(address => uint256) public frozenBalances;
 
-    mapping(address => mapping(address => uint256)) public flipToEuiAllowance;
-    mapping(address => mapping(address => uint256)) public flipToEudAllowance;
-
     // Roles
     bytes32 public constant PAUSE_ROLE = keccak256("PAUSE_ROLE");
     bytes32 public constant MINT_ROLE = keccak256("MINT_ROLE");
