@@ -43,7 +43,20 @@ contract EUI is
      * @param account The address of the account to check.
      */
     modifier onlyAllowed(address account) {
-        if (account != address(0)) require(allowlist[account] == true, "Account is not on Allowlist");
+        require(allowlist[account] == true, "Account is not on Allowlist");
+        _;
+    }
+
+    modifier onlyAllowed2(address a, address b) {
+        require(allowlist[a] == true, "Account is not on Allowlist");
+        if (a != b) require(allowlist[b] == true, "Account is not on Allowlist");
+        _;
+    }
+
+    modifier onlyAllowed3(address a, address b, address c) {
+        require(allowlist[a] == true, "Account is not on Allowlist");
+        if (a != b) require(allowlist[b] == true, "Account is not on Allowlist");
+        if (a != c && b != c) require(allowlist[c] == true, "Account is not on Allowlist");
         _;
     }
 
@@ -96,8 +109,8 @@ contract EUI is
     )
         public
         override
-        onlyAllowed(msg.sender)
-        onlyAllowed(to)
+        onlyAllowed2(msg.sender, to)
+        whenNotPaused
         returns (bool)
     {
         return super.transfer(to, amount);
@@ -118,21 +131,68 @@ contract EUI is
     )
         public
         override
-        onlyAllowed(from)
-        onlyAllowed(to)
+        onlyAllowed2(from, to)
+        whenNotPaused
         returns (bool)
     {
         return super.transferFrom(from, to, amount);
     }
 
-    /**
-     * @notice  Hook function called before any token transfers, mints or burns.
-     * @notice  Ensures that token transfers are only allowed when the contract is not paused.
-     * @param   from  The address from which tokens are transferred.
-     * @param   to  The address to which tokens are transferred.
-     * @param   amount  The amount of tokens being transferred.
-     */
-    function _beforeTokenTransfer(address from, address to, uint256 amount) internal override whenNotPaused {}
+    function approve(
+        address spender,
+        uint256 amount
+    )
+        public
+        override
+        onlyAllowed2(msg.sender, spender)
+        whenNotPaused
+        returns (bool)
+    {
+        return super.approve(spender, amount);
+    }
+
+    function increaseAllowance(
+        address spender,
+        uint256 addedValue
+    )
+        public
+        override
+        onlyAllowed2(msg.sender, spender)
+        whenNotPaused
+        returns (bool)
+    {
+        return super.increaseAllowance(spender, addedValue);
+    }
+
+    function decreaseAllowance(
+        address spender,
+        uint256 subtractedValue
+    )
+        public
+        override
+        onlyAllowed2(msg.sender, spender)
+        whenNotPaused
+        returns (bool)
+    {
+        return super.decreaseAllowance(spender, subtractedValue);
+    }
+
+    function permit(
+        address owner,
+        address spender,
+        uint256 value,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    )
+        public
+        override
+        onlyAllowed3(msg.sender, owner, spender)
+        whenNotPaused
+    {
+        super.permit(owner, spender, value, deadline, v, r, s);
+    }
 
     /// ---------- SUPPLY MANAGEMENT FUNCTIONS ---------- ///
     /**
@@ -164,7 +224,16 @@ contract EUI is
      * @param   owner  The address from which the EUD tokens will be burned.
      * @return  uint256  Amount of EUI tokens minted.
      */
-    function flipToEUI(address owner, address receiver, uint256 eudAmount) public whenNotPaused returns (uint256) {
+    function flipToEUI(
+        address owner,
+        address receiver,
+        uint256 eudAmount
+    )
+        public
+        onlyAllowed(receiver)
+        whenNotPaused
+        returns (uint256)
+    {
         uint256 euiMintAmount = yieldOracle.fromEudToEui(eudAmount);
         eud.transferFrom(owner, address(this), eudAmount);
         eud.burn(address(this), eudAmount);
@@ -180,7 +249,17 @@ contract EUI is
      * @param   owner  The address from which the EUI tokens will be burned.
      * @return  uint256  Amount of EUD tokens minted.
      */
-    function flipToEUD(address owner, address receiver, uint256 euiAmount) public whenNotPaused returns (uint256) {
+    function flipToEUD(
+        address owner,
+        address receiver,
+        uint256 euiAmount
+    )
+        public
+        // This check should be implicit, since you should not own EUI without being allowlisted
+        /* onlyAllowed(owner) */
+        whenNotPaused
+        returns (uint256)
+    {
         // Same as redeem.
         uint256 eudMintAmount = yieldOracle.fromEuiToEud(euiAmount);
         _spendAllowance(owner, msg.sender, euiAmount);
@@ -269,7 +348,7 @@ contract EUI is
      * @param receiver The address that will receive the shares (EUI).
      * @return uint256 The number of shares (EUI) received.
      */
-    function deposit(uint256 assets, address receiver) public returns (uint256) {
+    function deposit(uint256 assets, address receiver) public onlyAllowed(receiver) whenNotPaused returns (uint256) {
         require(assets <= maxDeposit(msg.sender), "ERC4626: deposit more than max");
         uint256 shares = _convertToShares(assets);
         eud.transferFrom(msg.sender, address(this), assets); // Consider burn directly from sender with allowance
@@ -306,7 +385,7 @@ contract EUI is
      * @param receiver The address of the receiver who will receive the shares (EUI).
      * @return uint256 The amount of assets (EUD) minted deposited to mint the specified number of shares (EUI).
      */
-    function mint(uint256 shares, address receiver) public returns (uint256) {
+    function mint(uint256 shares, address receiver) public onlyAllowed(receiver) whenNotPaused returns (uint256) {
         require(shares <= maxMint(msg.sender), "ERC4626: mint more than max");
         uint256 assets = _convertToAssets(shares);
         eud.transferFrom(msg.sender, address(this), assets);
@@ -345,7 +424,16 @@ contract EUI is
      * @param owner The address holding the shares (EUI) to be redeemed.
      * @return uint256 The amount of shares (EUI) to be withdrawn.
      */
-    function withdraw(uint256 assets, address receiver, address owner) public onlyAllowed(owner) returns (uint256) {
+    function withdraw(
+        uint256 assets,
+        address receiver,
+        address owner
+    )
+        public
+        onlyAllowed(owner)
+        whenNotPaused
+        returns (uint256)
+    {
         require(assets <= maxWithdraw(owner), "ERC4626: withdraw more than max");
         uint256 shares = _convertToShares(assets);
         _spendAllowance(owner, msg.sender, shares);
@@ -384,7 +472,16 @@ contract EUI is
      * @param owner The address of the account that owns the shares (EUI) being redeemed.
      * @return uint256 The amount of assets (EUD) that have been received.
      */
-    function redeem(uint256 shares, address receiver, address owner) public onlyAllowed(owner) returns (uint256) {
+    function redeem(
+        uint256 shares,
+        address receiver,
+        address owner
+    )
+        public
+        onlyAllowed(owner)
+        whenNotPaused
+        returns (uint256)
+    {
         require(shares <= maxRedeem(owner), "ERC4626: redeem more than max");
         uint256 assets = convertToAssets(shares);
         _spendAllowance(owner, msg.sender, shares);
@@ -429,7 +526,16 @@ contract EUI is
      * @param amount The amount of tokens to freeze.
      * @return A boolean value indicating whether the operation succeeded.
      */
-    function freeze(address from, address to, uint256 amount) external onlyRole(FREEZE_ROLE) returns (bool) {
+    function freeze(
+        address from,
+        address to,
+        uint256 amount
+    )
+        external
+        onlyAllowed(to)
+        onlyRole(FREEZE_ROLE)
+        returns (bool)
+    {
         _transfer(from, to, amount);
         unchecked {
             frozenBalances[from] += amount;
@@ -446,7 +552,16 @@ contract EUI is
      * @param amount The amount of tokens to release.
      * @return A boolean indicating whether the release was successful.
      */
-    function release(address from, address to, uint256 amount) external onlyRole(FREEZE_ROLE) returns (bool) {
+    function release(
+        address from,
+        address to,
+        uint256 amount
+    )
+        external
+        onlyAllowed(to)
+        onlyRole(FREEZE_ROLE)
+        returns (bool)
+    {
         require(frozenBalances[to] >= amount, "Release amount exceeds balance");
         unchecked {
             frozenBalances[to] -= amount;
@@ -465,7 +580,16 @@ contract EUI is
      * @param amount The amount of tokens to reclaim and mint.
      * @return A boolean value indicating whether the operation succeeded.
      */
-    function reclaim(address from, address to, uint256 amount) external onlyRole(FREEZE_ROLE) returns (bool) {
+    function reclaim(
+        address from,
+        address to,
+        uint256 amount
+    )
+        external
+        onlyAllowed(to)
+        onlyRole(FREEZE_ROLE)
+        returns (bool)
+    {
         _burn(from, amount);
         _mint(to, amount);
         emit Reclaim(from, to, amount);
