@@ -38,7 +38,20 @@ contract EUD is
      * @param account The address of the account to check.
      */
     modifier notBlocked(address account) {
-        if (account != address(0)) require(blocklist[account] == false, "Account is blocked");
+        require(blocklist[account] == false, "Account is blocked");
+        _;
+    }
+
+    modifier notBlocked2(address a, address b) {
+        require(blocklist[a] == false, "Account is blocked");
+        if (a != b) require(blocklist[b] == false, "Account is blocked");
+        _;
+    }
+
+    modifier notBlocked3(address a, address b, address c) {
+        require(blocklist[a] == false, "Account is blocked");
+        if (a != b) require(blocklist[b] == false, "Account is blocked");
+        if (a != c && b != c) require(blocklist[c] == false, "Account is blocked");
         _;
     }
 
@@ -83,8 +96,8 @@ contract EUD is
     )
         public
         override
-        notBlocked(msg.sender)
-        notBlocked(to)
+        notBlocked2(msg.sender, to)
+        whenNotPaused
         returns (bool)
     {
         return super.transfer(to, amount);
@@ -105,21 +118,68 @@ contract EUD is
     )
         public
         override
-        notBlocked(from)
-        notBlocked(to)
+        notBlocked3(msg.sender, from, to)
+        whenNotPaused
         returns (bool)
     {
         return super.transferFrom(from, to, amount);
     }
 
-    /**
-     * @notice  Hook function called before any token transfers, mints or burns.
-     * @notice  Ensures that token transfers are only allowed when the contract is not paused.
-     * @param   from  The address from which tokens are transferred.
-     * @param   to  The address to which tokens are transferred.
-     * @param   amount  The amount of tokens being transferred.
-     */
-    function _beforeTokenTransfer(address from, address to, uint256 amount) internal override whenNotPaused {}
+    function approve(
+        address spender,
+        uint256 amount
+    )
+        public
+        override
+        notBlocked2(msg.sender, spender)
+        whenNotPaused
+        returns (bool)
+    {
+        return super.approve(spender, amount);
+    }
+
+    function increaseAllowance(
+        address spender,
+        uint256 addedValue
+    )
+        public
+        override
+        notBlocked2(msg.sender, spender)
+        whenNotPaused
+        returns (bool)
+    {
+        return super.increaseAllowance(spender, addedValue);
+    }
+
+    function decreaseAllowance(
+        address spender,
+        uint256 subtractedValue
+    )
+        public
+        override
+        notBlocked2(msg.sender, spender)
+        whenNotPaused
+        returns (bool)
+    {
+        return super.decreaseAllowance(spender, subtractedValue);
+    }
+
+    function permit(
+        address owner,
+        address spender,
+        uint256 value,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    )
+        public
+        override
+        notBlocked3(msg.sender, owner, spender)
+        whenNotPaused
+    {
+        super.permit(owner, spender, value, deadline, v, r, s);
+    }
 
     /// ---------- SUPPLY MANAGEMENT FUNCTIONS ---------- ///
     /**
@@ -139,7 +199,7 @@ contract EUD is
      * @param   from  The address from which tokens will be burned.
      * @param   amount  The amount of tokens to be burned.
      */
-    function burn(address from, uint256 amount) public onlyRole(BURN_ROLE) notBlocked(from) {
+    function burn(address from, uint256 amount) public onlyRole(BURN_ROLE) {
         _burn(from, amount);
     }
 
@@ -169,7 +229,16 @@ contract EUD is
      * @param amount The amount of tokens to freeze.
      * @return A boolean value indicating whether the operation succeeded.
      */
-    function freeze(address from, address to, uint256 amount) external onlyRole(FREEZE_ROLE) returns (bool) {
+    function freeze(
+        address from,
+        address to,
+        uint256 amount
+    )
+        external
+        onlyRole(FREEZE_ROLE)
+        notBlocked(to)
+        returns (bool)
+    {
         _transfer(from, to, amount);
         unchecked {
             frozenBalances[from] += amount;
@@ -186,7 +255,16 @@ contract EUD is
      * @param amount The amount of tokens to release.
      * @return A boolean indicating whether the release was successful.
      */
-    function release(address from, address to, uint256 amount) external onlyRole(FREEZE_ROLE) returns (bool) {
+    function release(
+        address from,
+        address to,
+        uint256 amount
+    )
+        external
+        onlyRole(FREEZE_ROLE)
+        notBlocked(to)
+        returns (bool)
+    {
         require(frozenBalances[to] >= amount, "Release amount exceeds balance");
         unchecked {
             frozenBalances[to] -= amount;
@@ -205,7 +283,16 @@ contract EUD is
      * @param amount The amount of tokens to reclaim and mint.
      * @return A boolean value indicating whether the operation succeeded.
      */
-    function reclaim(address from, address to, uint256 amount) external onlyRole(FREEZE_ROLE) returns (bool) {
+    function reclaim(
+        address from,
+        address to,
+        uint256 amount
+    )
+        external
+        onlyRole(FREEZE_ROLE)
+        notBlocked(to)
+        returns (bool)
+    {
         _burn(from, amount);
         _mint(to, amount);
         emit Reclaim(from, to, amount);

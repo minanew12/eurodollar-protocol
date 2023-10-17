@@ -436,3 +436,235 @@ contract EUDTest is Test, Constants {
 contract EUDv2 is EUD {
     function initializeV2() public reinitializer(2) {}
 }
+
+contract Blocked is Test {
+    EUD eud;
+
+    address self;
+    address badActorFrom;
+    address badActorTo;
+    address badActorMule;
+
+    function setUp() public {
+        EUD implementation = new EUD();
+        ERC1967Proxy eudProxy = new ERC1967Proxy(
+            address(implementation),
+            abi.encodeCall(EUD.initialize, ())
+        );
+        eud = EUD(address(eudProxy));
+
+        eud.grantRole(eud.MINT_ROLE(), address(this));
+        eud.grantRole(eud.BURN_ROLE(), address(this));
+        eud.grantRole(eud.BLOCK_ROLE(), address(this));
+        eud.grantRole(eud.PAUSE_ROLE(), address(this));
+        eud.grantRole(eud.FREEZE_ROLE(), address(this));
+
+        self = address(this);
+        badActorFrom = makeAddr("badActorFrom");
+        badActorTo = makeAddr("badActorTo");
+        badActorMule = makeAddr("badActorMule");
+
+        eud.mint(self, 1000);
+        eud.mint(badActorFrom, 1000);
+        eud.mint(badActorTo, 1000);
+        eud.mint(badActorMule, 1000);
+
+        vm.prank(badActorFrom);
+        eud.approve(badActorMule, 1000);
+
+        vm.prank(badActorTo);
+        eud.approve(badActorMule, 1000);
+
+        eud.addToBlocklist(badActorFrom);
+        eud.addToBlocklist(badActorTo);
+        eud.addToBlocklist(badActorMule);
+    }
+
+    function invariant_blocked() public {
+        assertTrue(eud.blocklist(badActorFrom), "badActorFrom should be blocked");
+        assertTrue(eud.blocklist(badActorTo), "badActorTo should be blocked");
+        assertTrue(eud.blocklist(badActorMule), "badActorMule should be blocked");
+    }
+
+    function test_CannotTransfer() public {
+        vm.expectRevert("Account is blocked");
+        eud.transfer(badActorTo, 0);
+
+        vm.expectRevert("Account is blocked");
+        vm.prank(badActorFrom);
+        eud.transfer(self, 0);
+    }
+
+    function test_CannotApprove() public {
+        vm.expectRevert("Account is blocked");
+        eud.approve(badActorTo, 0);
+
+        vm.expectRevert("Account is blocked");
+        vm.prank(badActorFrom);
+        eud.approve(self, 0);
+    }
+
+    function test_CannotTransferFrom() public {
+        vm.expectRevert("Account is blocked");
+        eud.transferFrom(badActorFrom, self, 0);
+
+        vm.expectRevert("Account is blocked");
+        eud.transferFrom(self, badActorTo, 0);
+
+        vm.expectRevert("Account is blocked");
+        vm.prank(badActorMule);
+        eud.transferFrom(self, self, 0);
+    }
+
+    function test_CannotIncreaseAllowance() public {
+        vm.expectRevert("Account is blocked");
+        eud.increaseAllowance(badActorTo, 0);
+
+        vm.expectRevert("Account is blocked");
+        vm.prank(badActorFrom);
+        eud.increaseAllowance(self, 0);
+    }
+
+    function test_CannotDecreaseAllowance() public {
+        vm.expectRevert("Account is blocked");
+        eud.decreaseAllowance(badActorTo, 0);
+
+        vm.expectRevert("Account is blocked");
+        vm.prank(badActorFrom);
+        eud.decreaseAllowance(self, 0);
+    }
+
+    function test_CannotMint() public {
+        vm.expectRevert("Account is blocked");
+        eud.mint(badActorTo, 0);
+    }
+
+    function test_CannotPermit() public {
+        vm.expectRevert("Account is blocked");
+        eud.permit(self, badActorTo, 0, 0, 0, bytes32(0), bytes32(0));
+
+        vm.expectRevert("Account is blocked");
+        eud.permit(badActorFrom, self, 0, 0, 0, bytes32(0), bytes32(0));
+
+        vm.expectRevert("Account is blocked");
+        vm.prank(badActorMule);
+        eud.permit(self, self, 0, 0, 0, bytes32(0), bytes32(0));
+    }
+
+    function test_burn() public {
+        eud.burn(badActorFrom, 10);
+        assertEq(eud.balanceOf(badActorFrom), 990);
+    }
+
+    function test_reclaim() public {
+        eud.reclaim(badActorFrom, self, 10);
+        assertEq(eud.balanceOf(self), 1010);
+
+        vm.expectRevert("Account is blocked");
+        eud.reclaim(self, badActorTo, 10);
+    }
+
+    function test_freeze() public {
+        eud.freeze(badActorFrom, self, 10);
+        assertEq(eud.balanceOf(self), 1010);
+
+        vm.expectRevert("Account is blocked");
+        eud.freeze(self, badActorTo, 10);
+    }
+
+    function test_release() public {
+        vm.expectRevert("Account is blocked");
+        eud.release(self, badActorFrom, 10);
+    }
+}
+
+contract Paused is Test {
+    EUD eud;
+
+    function setUp() public {
+        EUD implementation = new EUD();
+        ERC1967Proxy eudProxy = new ERC1967Proxy(
+            address(implementation),
+            abi.encodeCall(EUD.initialize, ())
+        );
+        eud = EUD(address(eudProxy));
+
+        eud.grantRole(eud.MINT_ROLE(), address(this));
+        eud.grantRole(eud.BURN_ROLE(), address(this));
+        eud.grantRole(eud.BLOCK_ROLE(), address(this));
+        eud.grantRole(eud.PAUSE_ROLE(), address(this));
+        eud.grantRole(eud.FREEZE_ROLE(), address(this));
+
+        eud.mint(address(this), 1000);
+        eud.freeze(address(this), address(this), 1000);
+        eud.pause();
+    }
+
+    function invariant_paused() public {
+        assertTrue(eud.paused(), "EUD should be paused");
+    }
+
+    function test_CannotTransfer() public {
+        vm.expectRevert("Pausable: paused");
+        eud.transfer(address(this), 0);
+    }
+
+    function test_CannotApprove() public {
+        vm.expectRevert("Pausable: paused");
+        eud.approve(address(this), 0);
+    }
+
+    function test_CannotTransferFrom() public {
+        vm.expectRevert("Pausable: paused");
+        eud.transferFrom(address(this), address(0), 0);
+    }
+
+    function test_CannotIncreaseAllowance() public {
+        vm.expectRevert("Pausable: paused");
+        eud.increaseAllowance(address(this), 0);
+    }
+
+    function test_CannotDecreaseAllowance() public {
+        vm.expectRevert("Pausable: paused");
+        eud.decreaseAllowance(address(this), 0);
+    }
+
+    function test_CannotPermit() public {
+        vm.expectRevert("Pausable: paused");
+        eud.permit(address(this), address(this), 0, 0, 0, bytes32(0), bytes32(0));
+    }
+
+    function test_burn() public {
+        eud.burn(address(this), 10);
+    }
+
+    function test_mint() public {
+        eud.mint(address(this), 10);
+    }
+
+    function test_reclaim() public {
+        eud.reclaim(address(this), address(this), 10);
+    }
+
+    function test_freeze() public {
+        eud.freeze(address(this), address(this), 10);
+    }
+
+    function test_release() public {
+        eud.release(address(this), address(this), 10);
+    }
+
+    function test_addToBlocklist_removeFromBlocklist() public {
+        eud.addToBlocklist(address(0x10));
+        eud.removeFromBlocklist(address(0x10));
+    }
+
+    function test_addManyToBlocklist_removeManyFromBlocklist() public {
+        address[] memory accounts = new address[](3);
+        accounts[0] = address(0x10);
+        accounts[1] = address(0x11);
+        accounts[2] = address(0x12);
+        eud.addManyToBlocklist(accounts);
+        eud.removeManyFromBlocklist(accounts);
+    }
+}
