@@ -423,47 +423,43 @@ contract Paused is Test, YieldOracleInvariants {
     }
 
     function test_setUpState() public {
-        assertTrue(yieldOracle.paused(), "Must be paused");
         assertTrue(yieldOracle.hasRole(yieldOracle.DEFAULT_ADMIN_ROLE(), address(this)), "Must have admin role");
         assertTrue(yieldOracle.hasRole(yieldOracle.PAUSE_ROLE(), address(this)), "Must have pause role");
         assertTrue(yieldOracle.hasRole(yieldOracle.ORACLE_ROLE(), address(this)), "Must have oracle role");
     }
 
-    function test_CannotUpdatePrice(uint256 amount) public {
+    function invariant_paused() external {
         assertTrue(yieldOracle.paused(), "Must be paused");
+    }
+
+    function test_CannotUpdatePrice(uint256 amount) public {
         vm.expectRevert("Pausable: paused");
         yieldOracle.updatePrice(amount);
     }
 
     function test_CannotFromEuiToEud(uint256 amount) public {
-        assertTrue(yieldOracle.paused(), "Must be paused");
         vm.expectRevert("Pausable: paused");
         yieldOracle.fromEuiToEud(amount);
     }
 
     function test_CannotFromEudToEui(uint256 amount) public {
-        assertTrue(yieldOracle.paused(), "Must be paused");
         vm.expectRevert("Pausable: paused");
         yieldOracle.fromEudToEui(amount);
     }
 
     function test_CannotSetMaxPriceIncrease() public {
-        assertTrue(yieldOracle.paused(), "Must be paused");
         yieldOracle.setMaxPriceIncrease(1e17);
     }
 
     function test_SetDelay() public {
-        assertTrue(yieldOracle.paused(), "Must be paused");
         yieldOracle.setDelay(1 hours);
     }
 
     function test_AdminUpdateCurrentPrice() public {
-        assertTrue(yieldOracle.paused(), "Must be paused");
         yieldOracle.adminUpdateCurrentPrice(MIN_PRICE);
     }
 
     function test_AdminUpdateOldPrice() public {
-        assertTrue(yieldOracle.paused(), "Must be paused");
         yieldOracle.adminUpdateOldPrice(MIN_PRICE);
     }
 }
