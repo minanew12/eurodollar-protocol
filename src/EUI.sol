@@ -74,7 +74,7 @@ contract EUI is
     );
 
     /**
-     * @notice Disables initializers from being called more than once.
+     * @notice Disables initializers for implementation contract.
      */
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor(address eudAddress) {
@@ -138,62 +138,6 @@ contract EUI is
         return super.transferFrom(from, to, amount);
     }
 
-    function approve(
-        address spender,
-        uint256 amount
-    )
-        public
-        override
-        onlyAllowed2(msg.sender, spender)
-        whenNotPaused
-        returns (bool)
-    {
-        return super.approve(spender, amount);
-    }
-
-    function increaseAllowance(
-        address spender,
-        uint256 addedValue
-    )
-        public
-        override
-        onlyAllowed2(msg.sender, spender)
-        whenNotPaused
-        returns (bool)
-    {
-        return super.increaseAllowance(spender, addedValue);
-    }
-
-    function decreaseAllowance(
-        address spender,
-        uint256 subtractedValue
-    )
-        public
-        override
-        onlyAllowed2(msg.sender, spender)
-        whenNotPaused
-        returns (bool)
-    {
-        return super.decreaseAllowance(spender, subtractedValue);
-    }
-
-    function permit(
-        address owner,
-        address spender,
-        uint256 value,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    )
-        public
-        override
-        onlyAllowed3(msg.sender, owner, spender)
-        whenNotPaused
-    {
-        super.permit(owner, spender, value, deadline, v, r, s);
-    }
-
     /// ---------- SUPPLY MANAGEMENT FUNCTIONS ---------- ///
     /**
      * @notice  Mints new tokens and adds them to the specified account.
@@ -202,7 +146,7 @@ contract EUI is
      * @param   to  The address to receive the newly minted tokens.
      * @param   amount  The amount of tokens to mint to the account.
      */
-    function mintEUI(address to, uint256 amount) public onlyRole(MINT_ROLE) onlyAllowed(to) {
+    function mintEUI(address to, uint256 amount) public whenNotPaused onlyRole(MINT_ROLE) onlyAllowed(to) {
         _mint(to, amount);
     }
 
@@ -212,7 +156,7 @@ contract EUI is
      * @param   from  The address from which tokens will be burned.
      * @param   amount  The amount of tokens to be burned.
      */
-    function burnEUI(address from, uint256 amount) public onlyRole(BURN_ROLE) {
+    function burnEUI(address from, uint256 amount) public whenNotPaused onlyRole(BURN_ROLE) {
         _burn(from, amount);
     }
 
@@ -235,7 +179,7 @@ contract EUI is
         returns (uint256)
     {
         uint256 euiMintAmount = yieldOracle.fromEudToEui(eudAmount);
-        eud.transferFrom(owner, address(this), eudAmount);
+        eud.transferFrom(owner, address(this), eudAmount); // Create check in EUD contract for direct burn
         eud.burn(address(this), eudAmount);
         _mint(receiver, euiMintAmount);
         emit FlippedToEUI(msg.sender, eudAmount, euiMintAmount);
@@ -255,8 +199,7 @@ contract EUI is
         uint256 euiAmount
     )
         public
-        // This check should be implicit, since you should not own EUI without being allowlisted
-        /* onlyAllowed(owner) */
+        onlyAllowed(owner)
         whenNotPaused
         returns (uint256)
     {
@@ -349,7 +292,7 @@ contract EUI is
      * @return uint256 The number of shares (EUI) received.
      */
     function deposit(uint256 assets, address receiver) public onlyAllowed(receiver) whenNotPaused returns (uint256) {
-        require(assets <= maxDeposit(msg.sender), "ERC4626: deposit more than max");
+        //require(assets <= maxDeposit(msg.sender), "ERC4626: deposit more than max"); // Gas optimization, no need for check.
         uint256 shares = _convertToShares(assets);
         eud.transferFrom(msg.sender, address(this), assets); // Consider burn directly from sender with allowance
         eud.burn(address(this), assets);
@@ -386,9 +329,9 @@ contract EUI is
      * @return uint256 The amount of assets (EUD) minted deposited to mint the specified number of shares (EUI).
      */
     function mint(uint256 shares, address receiver) public onlyAllowed(receiver) whenNotPaused returns (uint256) {
-        require(shares <= maxMint(msg.sender), "ERC4626: mint more than max");
+        //require(shares <= maxMint(msg.sender), "ERC4626: mint more than max"); // Gas optimization, no need for check.
         uint256 assets = _convertToAssets(shares);
-        eud.transferFrom(msg.sender, address(this), assets);
+        eud.transferFrom(msg.sender, address(this), assets); // Implement direct burn in EUD
         eud.burn(address(this), assets);
         _mint(receiver, shares);
         emit Deposit(msg.sender, receiver, assets, shares);
@@ -405,7 +348,7 @@ contract EUI is
         if (paused()) {
             return 0;
         }
-        return convertToAssets(this.balanceOf(owner));
+        return _convertToAssets(this.balanceOf(owner));
     }
 
     /**
@@ -434,7 +377,7 @@ contract EUI is
         whenNotPaused
         returns (uint256)
     {
-        require(assets <= maxWithdraw(owner), "ERC4626: withdraw more than max");
+        require(assets <= maxWithdraw(owner), "ERC4626: withdraw more than max"); // Consider explicit check on assets, to avoid double pause check
         uint256 shares = _convertToShares(assets);
         _spendAllowance(owner, msg.sender, shares);
         _burn(owner, shares);
@@ -482,7 +425,7 @@ contract EUI is
         whenNotPaused
         returns (uint256)
     {
-        require(shares <= maxRedeem(owner), "ERC4626: redeem more than max");
+        require(shares <= maxRedeem(owner), "ERC4626: redeem more than max"); // Consider explicit check on shares, to avoid double pause check
         uint256 assets = convertToAssets(shares);
         _spendAllowance(owner, msg.sender, shares);
         _burn(owner, shares);
@@ -601,7 +544,7 @@ contract EUI is
      * @notice Only callable by accounts with the `ALLOW_ROLE`.
      * @param account The address to be added to the allow list.
      */
-    function addToAllowlist(address account) external onlyRole(ALLOW_ROLE) {
+    function addToAllowlist(address account) external onlyRole(ALLOW_ROLE) { // Remove this and just use function with array
         _addToAllowlist(account);
     }
 

@@ -63,7 +63,7 @@ contract EUD is
     event Reclaim(address indexed from, address indexed to, uint256 amount);
 
     /**
-     * @notice Disables initializers from being called more than once.
+     * @notice Disables initializers for implementation contract.
      */
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {

@@ -18,6 +18,7 @@ contract YieldOracle is Pausable, AccessControl {
     uint256 public lastUpdate; // Timestamp of the last price update
     uint256 public delay; // Guardrail to limit how often the oracle can be updated
 
+    uint256 private _nextPrice; // Queued up price to be set
     uint256 private _oldPrice; // When we go from EUI to EUD
     uint256 private _currentPrice; // When we go from EUD to EUI
 
