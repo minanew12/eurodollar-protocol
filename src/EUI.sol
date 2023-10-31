@@ -540,32 +540,19 @@ contract EUI is
     }
 
     /**
-     * @notice Add an address to the allow list.
-     * @notice Only callable by accounts with the `ALLOW_ROLE`.
-     * @param account The address to be added to the allow list.
-     */
-    function addToAllowlist(address account) external onlyRole(ALLOW_ROLE) { // Remove this and just use function with array
-        _addToAllowlist(account);
-    }
-
-    /**
      * @notice Add multiple addresses to the allow list.
      * @notice Only callable by accounts with the `ALLOW_ROLE`.
      * @param accounts The addresses to be added to the allow list.
      */
-    function addManyToAllowlist(address[] calldata accounts) external onlyRole(ALLOW_ROLE) {
+    function addToAllowlist(address[] calldata accounts) external onlyRole(ALLOW_ROLE) {
         for (uint256 i; i < accounts.length; i++) {
             _addToAllowlist(accounts[i]);
         }
     }
 
-    /**
-     * @notice  Remove an address from the allow list.
-     * @notice Only callable by accounts with the `ALLOW_ROLE`.
-     * @param   account The address to be removed from the allow list.
-     */
-    function removeFromAllowlist(address account) external onlyRole(ALLOW_ROLE) {
-        _removeFromAllowlist(account);
+    // TODO remove me
+    function addToAllowlist(address account) external onlyRole(ALLOW_ROLE) {
+        _addToAllowlist(account);
     }
 
     /**
@@ -573,10 +560,15 @@ contract EUI is
      * @notice  Only callable by accounts with the `ALLOW_ROLE`.
      * @param   accounts The addresses to be removed from the allow list.
      */
-    function removeManyFromAllowlist(address[] calldata accounts) external onlyRole(ALLOW_ROLE) {
+    function removeFromAllowlist(address[] calldata accounts) external onlyRole(ALLOW_ROLE) {
         for (uint256 i; i < accounts.length; i++) {
             _removeFromAllowlist(accounts[i]);
         }
+    }
+
+    // TODO remove me
+    function removeFromAllowlist(address account) external onlyRole(ALLOW_ROLE) {
+        _removeFromAllowlist(account);
     }
 
     /**

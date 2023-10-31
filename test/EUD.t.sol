@@ -174,7 +174,10 @@ contract EUDTest is Test, Constants {
     }
 
     function testAddToBlocklist(address account) public {
-        eud.addToBlocklist(account);
+        address[] memory accounts = new address[](1);
+        accounts[0] = account;
+
+        eud.addToBlocklist(accounts);
         assertTrue(eud.blocklist(account));
     }
 
@@ -183,16 +186,19 @@ contract EUDTest is Test, Constants {
         accounts[0] = account1;
         accounts[1] = account2;
         accounts[2] = account3;
-        eud.addManyToBlocklist(accounts);
+        eud.addToBlocklist(accounts);
         for (uint256 i = 0; i < accounts.length; i++) {
             assertTrue(eud.blocklist(accounts[i]));
         }
     }
 
     function testRemoveFromBlocklist(address account) public {
-        eud.addToBlocklist(account);
+        address[] memory accounts = new address[](1);
+        accounts[0] = account;
+
+        eud.addToBlocklist(accounts);
         assertTrue(eud.blocklist(account));
-        eud.removeFromBlocklist(account);
+        eud.removeFromBlocklist(accounts);
         assertTrue(!eud.blocklist(account));
     }
 
@@ -201,11 +207,11 @@ contract EUDTest is Test, Constants {
         accounts[0] = account1;
         accounts[1] = account2;
         accounts[2] = account3;
-        eud.addManyToBlocklist(accounts);
+        eud.addToBlocklist(accounts);
         for (uint256 i = 0; i < accounts.length; i++) {
             assertTrue(eud.blocklist(accounts[i]));
         }
-        eud.removeManyFromBlocklist(accounts);
+        eud.removeFromBlocklist(accounts);
         for (uint256 i = 0; i < accounts.length; i++) {
             assertTrue(!eud.blocklist(accounts[i]));
         }
@@ -213,17 +219,25 @@ contract EUDTest is Test, Constants {
 
     function testFailAddToBlocklistNotAuthorized(address account) public {
         vm.assume(account != address(this));
+
+        address[] memory accounts = new address[](1);
+        accounts[0] = account;
+
         vm.prank(account);
-        eud.addToBlocklist(account);
+        eud.addToBlocklist(accounts);
         assertTrue(eud.blocklist(account));
     }
 
     function testFailRemoveFromBlocklistNotAuthorized(address account) public {
         vm.assume(account != address(this));
-        eud.addToBlocklist(account);
+
+        address[] memory accounts = new address[](1);
+        accounts[0] = account;
+
+        eud.addToBlocklist(accounts);
         assertTrue(eud.blocklist(account));
         vm.prank(account);
-        eud.removeFromBlocklist(account);
+        eud.removeFromBlocklist(accounts);
         assertTrue(!eud.blocklist(account));
     }
 
@@ -475,9 +489,12 @@ contract Blocked is Test {
         vm.prank(badActorTo);
         eud.approve(badActorMule, 1000);
 
-        eud.addToBlocklist(badActorFrom);
-        eud.addToBlocklist(badActorTo);
-        eud.addToBlocklist(badActorMule);
+        address[] memory accounts = new address[](3);
+        accounts[0] = badActorFrom;
+        accounts[1] = badActorTo;
+        accounts[2] = badActorMule;
+
+        eud.addToBlocklist(accounts);
     }
 
     function invariant_blocked() public {
@@ -654,9 +671,12 @@ contract Paused is Test {
         eud.release(address(this), address(this), 10);
     }
 
-    function test_addToBlocklist_removeFromBlocklist() public {
-        eud.addToBlocklist(address(0x10));
-        eud.removeFromBlocklist(address(0x10));
+    function test_addSingleToBlocklist_removeFromBlocklist() public {
+        address[] memory accounts = new address[](1);
+        accounts[0] = address(0x10);
+
+        eud.addToBlocklist(accounts);
+        eud.removeFromBlocklist(accounts);
     }
 
     function test_addManyToBlocklist_removeManyFromBlocklist() public {
@@ -664,7 +684,7 @@ contract Paused is Test {
         accounts[0] = address(0x10);
         accounts[1] = address(0x11);
         accounts[2] = address(0x12);
-        eud.addManyToBlocklist(accounts);
-        eud.removeManyFromBlocklist(accounts);
+        eud.addToBlocklist(accounts);
+        eud.removeFromBlocklist(accounts);
     }
 }

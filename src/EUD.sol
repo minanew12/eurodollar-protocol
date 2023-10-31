@@ -300,29 +300,11 @@ contract EUD is
     }
 
     /**
-     * @notice  Add an address to the blocklist.
-     * @notice Only callable by accounts with the `BLOCK_ROLE`.
-     * @param   account The address to be added to the blocklist.
-     */
-    function addToBlocklist(address account) external onlyRole(BLOCK_ROLE) {
-        _addToBlocklist(account);
-    }
-
-    /**
-     * @notice  Remove an address from the blocklist.
-     * @notice Only callable by accounts with the `BLOCK_ROLE`.
-     * @param   account The address to be removed from the blocklist.
-     */
-    function removeFromBlocklist(address account) external onlyRole(BLOCK_ROLE) {
-        _removeFromBlocklist(account);
-    }
-
-    /**
      * @notice  Add multiple addresses to the blocklist.
      * @notice Only callable by accounts with the `BLOCK_ROLE`.
      * @param   accounts The addresses to be added to the blocklist.
      */
-    function addManyToBlocklist(address[] calldata accounts) external onlyRole(BLOCK_ROLE) {
+    function addToBlocklist(address[] calldata accounts) external onlyRole(BLOCK_ROLE) {
         for (uint256 i; i < accounts.length; i++) {
             _addToBlocklist(accounts[i]);
         }
@@ -333,7 +315,7 @@ contract EUD is
      * @notice  Only callable by accounts with the `BLOCK_ROLE`.
      * @param   accounts The addresses to be removed from the blocklist.
      */
-    function removeManyFromBlocklist(address[] calldata accounts) external onlyRole(BLOCK_ROLE) {
+    function removeFromBlocklist(address[] calldata accounts) external onlyRole(BLOCK_ROLE) {
         for (uint256 i; i < accounts.length; i++) {
             _removeFromBlocklist(accounts[i]);
         }

@@ -53,8 +53,12 @@ contract EUITest is Test, Constants {
         eui.grantRole(ALLOW_ROLE, address(this));
         eui.grantRole(PAUSE_ROLE, address(this));
         eui.grantRole(FREEZE_ROLE, address(this));
-        eui.addToAllowlist(address(eui));
-        eui.addToAllowlist(address(this));
+
+        address[] memory allowlist = new address[](2);
+        allowlist[0] = address(this);
+        allowlist[1] = address(eui);
+
+        eui.addToAllowlist(allowlist);
     }
 
     function testInitialize() public {
@@ -193,7 +197,9 @@ contract EUITest is Test, Constants {
 
     function testTransferEui(address account, uint256 amount) public {
         vm.assume(account != address(0) && account != address(this));
-        eui.addToAllowlist(account);
+        address[] memory allowlist = new address[](1);
+        allowlist[0] = account;
+        eui.addToAllowlist(allowlist);
         eui.mintEUI(address(this), amount);
         eui.transfer(account, amount);
         assertEq(eui.balanceOf(account), amount);
@@ -204,7 +210,9 @@ contract EUITest is Test, Constants {
 
     function testAddToAllowlist(address account) public {
         vm.assume(account != address(this));
-        eui.addToAllowlist(account);
+        address[] memory allowlist = new address[](1);
+        allowlist[0] = account;
+        eui.addToAllowlist(allowlist);
         assertTrue(eui.allowlist(account));
     }
 
@@ -213,16 +221,18 @@ contract EUITest is Test, Constants {
         accounts[0] = account1;
         accounts[1] = account2;
         accounts[2] = account3;
-        eui.addManyToAllowlist(accounts);
+        eui.addToAllowlist(accounts);
         for (uint256 i = 0; i < accounts.length; i++) {
             assertTrue(eui.allowlist(accounts[i]));
         }
     }
 
     function testRemoveFromAllowlist(address account) public {
-        eui.addToAllowlist(account);
+        address[] memory allowlist = new address[](1);
+        allowlist[0] = account;
+        eui.addToAllowlist(allowlist);
         assertTrue(eui.allowlist(account));
-        eui.removeFromAllowlist(account);
+        eui.removeFromAllowlist(allowlist);
         assertTrue(!eui.allowlist(account));
     }
 
@@ -231,11 +241,11 @@ contract EUITest is Test, Constants {
         accounts[0] = account1;
         accounts[1] = account2;
         accounts[2] = account3;
-        eui.addManyToAllowlist(accounts);
+        eui.addToAllowlist(accounts);
         for (uint256 i = 0; i < accounts.length; i++) {
             assertTrue(eui.allowlist(accounts[i]));
         }
-        eui.removeManyFromAllowlist(accounts);
+        eui.removeFromAllowlist(accounts);
         for (uint256 i = 0; i < accounts.length; i++) {
             assertTrue(!eui.allowlist(accounts[i]));
         }
@@ -244,15 +254,19 @@ contract EUITest is Test, Constants {
     function testFailAddToAllowlistNotAuthorized(address account) public {
         vm.assume(account != address(this));
         vm.prank(account);
-        eui.addToAllowlist(account);
+        address[] memory allowlist = new address[](1);
+        allowlist[0] = account;
+        eui.addToAllowlist(allowlist);
         assertTrue(eui.allowlist(account));
     }
 
     function testFailRemoveFromAllowlistNotAuthorized(address account) public {
-        eui.addToAllowlist(account);
+        address[] memory allowlist = new address[](1);
+        allowlist[0] = account;
+        eui.addToAllowlist(allowlist);
         assertTrue(eui.allowlist(account));
         vm.prank(address(0));
-        eui.removeFromAllowlist(account);
+        eui.removeFromAllowlist(allowlist);
         assertTrue(!eui.allowlist(account));
     }
 
@@ -682,11 +696,6 @@ contract EUITest is Test, Constants {
         eui.setYieldOracle(newYieldOracle);
         assertEq(address(eui.yieldOracle()), newYieldOracle);
     }
-
-    // function testSetEud(address newEud) public {
-    //     eui.setEud(newEud);
-    //     assertEq(address(eui.eud()), newEud);
-    // }
 
     function testFailSetYieldOracleUnauthorized(address newYieldOracle) public {
         vm.prank(address(0));
