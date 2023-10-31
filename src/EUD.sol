@@ -48,13 +48,6 @@ contract EUD is
         _;
     }
 
-    modifier notBlocked3(address a, address b, address c) {
-        require(blocklist[a] == false, "Account is blocked");
-        if (a != b) require(blocklist[b] == false, "Account is blocked");
-        if (a != c && b != c) require(blocklist[c] == false, "Account is blocked");
-        _;
-    }
-
     // Events
     event AddedToBlocklist(address indexed account);
     event RemovedFromBlocklist(address indexed account);
@@ -118,67 +111,11 @@ contract EUD is
     )
         public
         override
-        notBlocked3(msg.sender, from, to)
+        notBlocked2(from, to)
         whenNotPaused
         returns (bool)
     {
         return super.transferFrom(from, to, amount);
-    }
-
-    function approve(
-        address spender,
-        uint256 amount
-    )
-        public
-        override
-        notBlocked2(msg.sender, spender)
-        whenNotPaused
-        returns (bool)
-    {
-        return super.approve(spender, amount);
-    }
-
-    function increaseAllowance(
-        address spender,
-        uint256 addedValue
-    )
-        public
-        override
-        notBlocked2(msg.sender, spender)
-        whenNotPaused
-        returns (bool)
-    {
-        return super.increaseAllowance(spender, addedValue);
-    }
-
-    function decreaseAllowance(
-        address spender,
-        uint256 subtractedValue
-    )
-        public
-        override
-        notBlocked2(msg.sender, spender)
-        whenNotPaused
-        returns (bool)
-    {
-        return super.decreaseAllowance(spender, subtractedValue);
-    }
-
-    function permit(
-        address owner,
-        address spender,
-        uint256 value,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    )
-        public
-        override
-        notBlocked3(msg.sender, owner, spender)
-        whenNotPaused
-    {
-        super.permit(owner, spender, value, deadline, v, r, s);
     }
 
     /// ---------- SUPPLY MANAGEMENT FUNCTIONS ---------- ///
