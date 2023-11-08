@@ -160,6 +160,20 @@ contract EUI is
         _burn(from, amount);
     }
 
+    function _euiToEud(address owner, address receiver, uint256 eui_, uint256 eud_) internal {
+        if (owner != msg.sender) {
+            _spendAllowance(owner, msg.sender, eui_);
+        }
+
+        _burn(owner, eui_);
+        eud.mint(receiver, eud_);
+    }
+
+    function _eudToEui(address owner, address receiver, uint256 eud_, uint256 eui_) internal {
+        eud.burnFrom(owner, msg.sender, eud_);
+        _mint(receiver, eui_);
+    }
+
     /// ---------- FLIP FUNCTIONS ---------- ///
     /**
      * @notice  Converts the specified amount of EUD tokens to EUI tokens using the current price.
@@ -179,9 +193,7 @@ contract EUI is
         returns (uint256)
     {
         uint256 euiMintAmount = yieldOracle.fromEudToEui(eudAmount);
-        eud.transferFrom(owner, address(this), eudAmount); // Create check in EUD contract for direct burn
-        eud.burn(address(this), eudAmount);
-        _mint(receiver, euiMintAmount);
+        _eudToEui(owner, receiver, eudAmount, euiMintAmount);
         emit FlippedToEUI(msg.sender, eudAmount, euiMintAmount);
         return euiMintAmount;
     }
@@ -205,9 +217,7 @@ contract EUI is
     {
         // Same as redeem.
         uint256 eudMintAmount = yieldOracle.fromEuiToEud(euiAmount);
-        _spendAllowance(owner, msg.sender, euiAmount);
-        _burn(owner, euiAmount);
-        eud.mint(receiver, eudMintAmount);
+        _euiToEud(owner, receiver, euiAmount, eudMintAmount);
         emit FlippedToEUD(msg.sender, euiAmount, eudMintAmount);
         return eudMintAmount;
     }
@@ -294,9 +304,7 @@ contract EUI is
     function deposit(uint256 assets, address receiver) public onlyAllowed(receiver) whenNotPaused returns (uint256) {
         //require(assets <= maxDeposit(msg.sender), "ERC4626: deposit more than max"); // Gas optimization, no need for check.
         uint256 shares = _convertToShares(assets);
-        eud.transferFrom(msg.sender, address(this), assets); // Consider burn directly from sender with allowance
-        eud.burn(address(this), assets);
-        _mint(receiver, shares);
+        _eudToEui(msg.sender, receiver, assets, shares);
         emit Deposit(msg.sender, receiver, assets, shares);
         return shares;
     }
@@ -331,9 +339,7 @@ contract EUI is
     function mint(uint256 shares, address receiver) public onlyAllowed(receiver) whenNotPaused returns (uint256) {
         //require(shares <= maxMint(msg.sender), "ERC4626: mint more than max"); // Gas optimization, no need for check.
         uint256 assets = _convertToAssets(shares);
-        eud.transferFrom(msg.sender, address(this), assets); // Implement direct burn in EUD
-        eud.burn(address(this), assets);
-        _mint(receiver, shares);
+        _eudToEui(msg.sender, receiver, assets, shares);
         emit Deposit(msg.sender, receiver, assets, shares);
         return assets;
     }
@@ -379,9 +385,7 @@ contract EUI is
     {
         require(assets <= maxWithdraw(owner), "ERC4626: withdraw more than max"); // Consider explicit check on assets, to avoid double pause check
         uint256 shares = _convertToShares(assets);
-        _spendAllowance(owner, msg.sender, shares);
-        _burn(owner, shares);
-        eud.mint(receiver, assets);
+        _euiToEud(owner, receiver, shares, assets);
         emit Withdraw(msg.sender, receiver, owner, assets, shares);
         return shares;
     }
@@ -427,9 +431,7 @@ contract EUI is
     {
         require(shares <= maxRedeem(owner), "ERC4626: redeem more than max"); // Consider explicit check on shares, to avoid double pause check
         uint256 assets = convertToAssets(shares);
-        _spendAllowance(owner, msg.sender, shares);
-        _burn(owner, shares);
-        eud.mint(receiver, assets);
+        _euiToEud(owner, receiver, shares, assets);
         emit Withdraw(msg.sender, receiver, owner, assets, shares);
         return assets;
     }

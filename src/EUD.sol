@@ -140,6 +140,22 @@ contract EUD is
         _burn(from, amount);
     }
 
+    /**
+     * @notice  Burns tokens as if performing a transferFrom and burn in one call.
+     * @notice  This function is specifically tailored to EUI use cases.
+     * @notice  This function can only be called by an account with the `BURN_ROLE`.
+     * @param   from  The address from which tokens will be burned.
+     * @param   spender  The address that is allowed to spend the tokens.
+     * @param   amount  The amount of tokens to be burned.
+     */
+    function burnFrom(address from, address spender, uint256 amount) public whenNotPaused onlyRole(BURN_ROLE) {
+        if (from != spender) {
+            _spendAllowance(from, spender, amount);
+        }
+
+        _burn(from, amount);
+    }
+
     /// ---------- TOKEN MANAGEMENT FUNCTIONS ---------- ///
     /**
      * @notice  This function can only be called by an account with the `PAUSE_ROLE`.
