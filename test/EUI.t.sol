@@ -10,18 +10,19 @@ import {IEUD} from "../interfaces/IEUD.sol";
 import {IYieldOracle} from "../interfaces/IYieldOracle.sol";
 import {EUI} from "../src/EUI.sol";
 import {EUD} from "../src/EUD.sol";
-import {YieldOracle} from "../src/YieldOracle.sol";
+import {YieldOracle, MIN_PRICE} from "../src/YieldOracle.sol";
 import {Constants} from "./Constants.sol";
 
-contract EUITest is Test, Constants {
-    EUI public eui;
-    EUD public eud;
+contract EuroDollarSetup is Test {
     YieldOracle public yieldOracle;
-    bytes32 constant PERMIT_TYPEHASH =
-        keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
+    EUD public eud;
+    EUI public eui;
 
-    function setUp() public {
-        // Setup EUD
+    address public owner;
+
+    function setUp() public virtual {
+        owner = address(this);
+
         EUD eudImplementation = new EUD();
         ERC1967Proxy eudProxy = new ERC1967Proxy(
             address(eudImplementation), 
@@ -29,18 +30,31 @@ contract EUITest is Test, Constants {
         );
         eud = EUD(address(eudProxy));
 
-        // Setup YieldOracle
         yieldOracle = new YieldOracle();
-        yieldOracle.adminUpdateCurrentPrice(1e18);
-        yieldOracle.adminUpdatePreviousPrice(1e18);
 
-        // Setup EUI
         EUI euiImplementation = new EUI(address(eud));
         ERC1967Proxy euiProxy = new ERC1967Proxy(
             address(euiImplementation),
             abi.encodeCall(EUI.initialize, (address(yieldOracle)))
         );
         eui = EUI(address(euiProxy));
+        eui.grantRole(eui.ALLOW_ROLE(), owner);
+
+        eud.setEui(address(eui));
+        eud.grantRole(eud.MINT_ROLE(), address(eui));
+        eud.grantRole(eud.BURN_ROLE(), address(eui));
+
+        eud.grantRole(eud.MINT_ROLE(), owner);
+    }
+}
+
+contract EUITest is Test, EuroDollarSetup, Constants {
+    bytes32 constant PERMIT_TYPEHASH =
+        keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
+
+    function setUp() public override {
+        super.setUp();
+
         // Grant Roles
         eud.grantRole(MINT_ROLE, address(this));
         eud.grantRole(MINT_ROLE, address(eui));
@@ -1140,36 +1154,20 @@ contract EUIv2 is EUI {
     function initializeV2() public reinitializer(2) {}
 }
 
-contract Paused is Test {
-    EUI eui;
 
-    function setUp() public {
-        EUD eud;
 
-        {
-            EUD implementation = new EUD();
-            ERC1967Proxy proxy = new ERC1967Proxy(
-                address(implementation),
-                abi.encodeCall(EUD.initialize, ())
-            );
-            eud = EUD(address(proxy));
-        }
 
-        YieldOracle oracle = new YieldOracle();
 
-        {
-            EUI implementation = new EUI(address(0));
-            ERC1967Proxy proxy = new ERC1967Proxy(
-                address(implementation),
-                abi.encodeCall(EUI.initialize, (address(oracle)))
-            );
-            eui = EUI(address(proxy));
-        }
 
-        eui.grantRole(eui.PAUSE_ROLE(), address(this));
-        eui.grantRole(eui.MINT_ROLE(), address(this));
-        eui.grantRole(eui.BURN_ROLE(), address(this));
-        eui.grantRole(eui.ALLOW_ROLE(), address(this));
-        eui.grantRole(eui.FREEZE_ROLE(), address(this));
+
+contract Paused is Test, EuroDollarSetup {
+    function setUp() public override {
+        super.setUp();
+
+        eui.grantRole(eui.PAUSE_ROLE(), owner);
+        eui.grantRole(eui.MINT_ROLE(), owner);
+        eui.grantRole(eui.BURN_ROLE(), owner);
+        eui.grantRole(eui.ALLOW_ROLE(), owner);
+        eui.grantRole(eui.FREEZE_ROLE(), owner);
     }
 }
