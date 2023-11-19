@@ -491,7 +491,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
     function testFlipToEui(address owner, address receiver, uint256 amount, uint256 price) public {
         // Bounds
         amount = bound(amount, 1, 1e39);
-        price = bound(price, 1e18, 1e39);
+        price = bound(price, MIN_PRICE, 1e39);
 
         // Assumes
         vm.assume(owner != address(0) && receiver != address(0));
@@ -514,7 +514,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
     function testFailFlipToEuiTooManyTokens(address owner, address receiver, uint256 amount, uint256 price) public {
         // Bounds
         amount = bound(amount, 1, 1e39);
-        price = bound(price, 1e18, 1e39);
+        price = bound(price, MIN_PRICE, 1e39);
 
         // Assumes
         vm.assume(owner != address(0) && receiver != address(0));
@@ -537,7 +537,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
     function testFailFlipToEuiWhilePaused(address owner, address receiver, uint256 amount, uint256 price) public {
         // Bounds
         amount = bound(amount, 1, 1e39);
-        price = bound(price, 1e18, 1e39);
+        price = bound(price, MIN_PRICE, 1e39);
 
         // Assumes
         vm.assume(owner != address(0) && receiver != address(0));
@@ -561,7 +561,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
     function testFlipToEud(address owner, address receiver, uint256 amount, uint256 price) public {
         // Bounds
         amount = bound(amount, 1, 1e39);
-        price = bound(price, 1e18, 1e39);
+        price = bound(price, MIN_PRICE, 1e39);
 
         // Assumes
         vm.assume(owner != address(0) && receiver != address(0));
@@ -612,7 +612,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
     function testFailFlipToEudTooManyTokens(address owner, address receiver, uint256 amount, uint256 price) public {
         // Bounds
         amount = bound(amount, 1, 1e39);
-        price = bound(price, 1e18, 1e39);
+        price = bound(price, MIN_PRICE, 1e39);
 
         // Assumes
         vm.assume(owner != address(0) && receiver != address(0));
@@ -636,7 +636,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
     function testFailFlipToEudWhilePaused(address owner, address receiver, uint256 amount, uint256 price) public {
         // Bounds
         amount = bound(amount, 1, 1e39);
-        price = bound(price, 1e18, 1e39);
+        price = bound(price, MIN_PRICE, 1e39);
 
         // Assumes
         vm.assume(owner != address(0) && receiver != address(0));
@@ -681,7 +681,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
     }
 
     function testConvertToShares(uint256 amount, uint256 previousPrice, uint256 currentPrice) public {
-        previousPrice = bound(previousPrice, 1e18, 1e37);
+        previousPrice = bound(previousPrice, MIN_PRICE, 1e37);
         currentPrice = bound(currentPrice, previousPrice, 1e37);
         amount = bound(amount, 1, 1e37);
         yieldOracle.adminUpdateCurrentPrice(currentPrice);
@@ -691,7 +691,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
     }
 
     function testConvertToAssets(uint256 amount, uint256 previousPrice, uint256 currentPrice) public {
-        previousPrice = bound(previousPrice, 1e18, 1e37);
+        previousPrice = bound(previousPrice, MIN_PRICE, 1e37);
         currentPrice = bound(currentPrice, previousPrice, 1e37);
         amount = bound(amount, 1, 1e37);
         yieldOracle.adminUpdateCurrentPrice(currentPrice);
@@ -710,7 +710,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
     }
 
     function testPreviewDeposit(uint256 amount, uint256 previousPrice, uint256 currentPrice) public {
-        previousPrice = bound(previousPrice, 1e18, 1e37);
+        previousPrice = bound(previousPrice, MIN_PRICE, 1e37);
         currentPrice = bound(currentPrice, previousPrice, 1e37);
         yieldOracle.adminUpdateCurrentPrice(currentPrice);
         yieldOracle.adminUpdatePreviousPrice(previousPrice);
@@ -764,7 +764,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
     {
         //Bounds
         amount = bound(amount, 1, 1e39);
-        currentPrice = bound(currentPrice, 1e18, 1e39);
+        currentPrice = bound(currentPrice, MIN_PRICE, 1e39);
         previousPrice = bound(previousPrice, currentPrice, 1e39);
 
         // Assumes
@@ -797,7 +797,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
     {
         //Bounds
         amount = bound(amount, 1, 1e39);
-        currentPrice = bound(currentPrice, 1e18, 1e39);
+        currentPrice = bound(currentPrice, MIN_PRICE, 1e39);
         previousPrice = bound(previousPrice, currentPrice, 1e39);
 
         // Assumes
@@ -830,7 +830,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
     }
 
     function testPreviewMint(uint256 amount, uint256 previousPrice, uint256 currentPrice) public {
-        previousPrice = bound(previousPrice, 1e18, 1e37);
+        previousPrice = bound(previousPrice, MIN_PRICE, 1e37);
         currentPrice = bound(currentPrice, previousPrice, 1e37);
         yieldOracle.adminUpdateCurrentPrice(currentPrice);
         yieldOracle.adminUpdatePreviousPrice(previousPrice);
@@ -851,7 +851,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
     {
         //Bounds
         amount = bound(amount, 1, 1e39);
-        previousPrice = bound(previousPrice, 1e18, 1e39);
+        previousPrice = bound(previousPrice, MIN_PRICE, 1e39);
         currentPrice = bound(currentPrice, previousPrice, 1e39);
         // Assumes
         vm.assume(owner != address(0) && receiver != address(0));
@@ -877,7 +877,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
     function testFailMintWhilePaused(address owner, address receiver, uint256 amount, uint256 price) public {
         //Bounds
         amount = bound(amount, 1, 1e39);
-        price = bound(price, 1e18, 1e39);
+        price = bound(price, MIN_PRICE, 1e39);
 
         // Assumes
         vm.assume(owner != address(0) && receiver != address(0));
@@ -900,7 +900,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
     }
 
     function testMaxWithdraw(address account, uint256 amount, uint256 previousPrice, uint256 currentPrice) public {
-        previousPrice = bound(previousPrice, 1e18, 1e37);
+        previousPrice = bound(previousPrice, MIN_PRICE, 1e37);
         currentPrice = bound(currentPrice, previousPrice, 1e37);
         yieldOracle.adminUpdateCurrentPrice(currentPrice);
         yieldOracle.adminUpdatePreviousPrice(previousPrice);
@@ -913,7 +913,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
 
     function testMaxWithdrawPaused(address account, uint256 amount, uint256 price) public {
         amount = bound(amount, 1, 1e39);
-        price = bound(price, 1e18, 1e39);
+        price = bound(price, MIN_PRICE, 1e39);
         yieldOracle.adminUpdateCurrentPrice(price);
         yieldOracle.adminUpdatePreviousPrice(price);
         vm.assume(account != address(0));
@@ -924,7 +924,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
     }
 
     function testPreviewWithdraw(uint256 amount, uint256 previousPrice, uint256 currentPrice) public {
-        previousPrice = bound(previousPrice, 1e18, 1e37);
+        previousPrice = bound(previousPrice, MIN_PRICE, 1e37);
         currentPrice = bound(currentPrice, previousPrice, 1e37);
         yieldOracle.adminUpdateCurrentPrice(currentPrice);
         yieldOracle.adminUpdatePreviousPrice(previousPrice);
@@ -943,7 +943,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
     {
         // Bounds
         amount = bound(amount, 1, 1e39);
-        previousPrice = bound(previousPrice, 1e18, 1e39);
+        previousPrice = bound(previousPrice, MIN_PRICE, 1e39);
         currentPrice = bound(currentPrice, previousPrice, 1e39);
 
         // Assumes
@@ -977,7 +977,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
     {
         // Bounds
         amount = bound(amount, 1, 1e39);
-        previousPrice = bound(previousPrice, 1e18, 1e39);
+        previousPrice = bound(previousPrice, MIN_PRICE, 1e39);
         currentPrice = bound(currentPrice, previousPrice, 1e39);
 
         // Assumes
@@ -1011,7 +1011,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
     {
         // Bounds
         amount = bound(amount, 1, 1e39);
-        previousPrice = bound(previousPrice, 1e18, 1e39);
+        previousPrice = bound(previousPrice, MIN_PRICE, 1e39);
         currentPrice = bound(currentPrice, previousPrice, 1e39);
 
         // Assumes
@@ -1052,7 +1052,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
     }
 
     function testPreviewRedeem(uint256 amount, uint256 previousPrice, uint256 currentPrice) public {
-        previousPrice = bound(previousPrice, 1e18, 1e37);
+        previousPrice = bound(previousPrice, MIN_PRICE, 1e37);
         currentPrice = bound(currentPrice, previousPrice, 1e37);
         yieldOracle.adminUpdateCurrentPrice(currentPrice);
         yieldOracle.adminUpdatePreviousPrice(previousPrice);
@@ -1065,7 +1065,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
     function testRedeem(address owner, address receiver, uint256 amount, uint256 price) public {
         // Bounds
         amount = bound(amount, 1, 1e39);
-        price = bound(price, 1e18, 1e39);
+        price = bound(price, MIN_PRICE, 1e39);
 
         // Assumes
         vm.assume(owner != address(0) && receiver != address(0));
@@ -1089,7 +1089,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
     function testFailRedeemTooManyShares(address owner, address receiver, uint256 amount, uint256 price) public {
         // Bounds
         amount = bound(amount, 1, 1e39);
-        price = bound(price, 1e18, 1e39);
+        price = bound(price, MIN_PRICE, 1e39);
 
         // Assumes
         vm.assume(owner != address(0) && receiver != address(0));
@@ -1112,7 +1112,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
     function testFailRedeemWhilePaused(address owner, address receiver, uint256 amount, uint256 price) public {
         // Bounds
         amount = bound(amount, 1, 1e39);
-        price = bound(price, 1e18, 1e39);
+        price = bound(price, MIN_PRICE, 1e39);
 
         // Assumes
         vm.assume(owner != address(0) && receiver != address(0));
