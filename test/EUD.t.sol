@@ -7,6 +7,8 @@ import {Test} from "forge-std/Test.sol";
 import {ERC1967Proxy} from "oz/proxy/ERC1967/ERC1967Proxy.sol";
 import {EUD} from "../src/EUD.sol";
 import {Constants} from "./Constants.sol";
+import {EUI} from "../src/EUI.sol";
+import {YieldOracle} from "../src/YieldOracle.sol";
 
 contract EUDTest is Test, Constants {
     EUD public eud;
@@ -443,6 +445,77 @@ contract EUDTest is Test, Constants {
         assertEq(eud.symbol(), "EUD");
         assertEq(eud.name(), "EuroDollar");
         assertEq(eud.decimals(), 18);
+    }
+}
+
+contract BalanceOf is Test {
+    EUD eud;
+
+    function setUp() public {
+        EUD implementation = new EUD();
+        ERC1967Proxy eudProxy = new ERC1967Proxy(
+            address(implementation),
+            abi.encodeCall(EUD.initialize, ())
+        );
+        eud = EUD(address(eudProxy));
+
+        eud.grantRole(eud.MINT_ROLE(), address(this));
+    }
+
+    function test_balanceOf() public {
+        assertEq(eud.balanceOf(address(this)), 0);
+        eud.mint(address(this), 1000);
+        assertEq(eud.balanceOf(address(this)), 1000);
+    }
+
+    function test_totalSupply() public {
+        assertEq(address(eud.eui()), address(0));
+        assertEq(eud.totalSupply(), 0);
+        eud.mint(address(this), 1000);
+        assertEq(eud.totalSupply(), 1000);
+    }
+
+    function test_balanceOfWithEui() public {
+        YieldOracle oracle = new YieldOracle();
+
+        EUI euiImplementation = new EUI(address(eud));
+        ERC1967Proxy euiProxy = new ERC1967Proxy(
+            address(euiImplementation),
+            abi.encodeCall(EUI.initialize, (address(oracle)))
+        );
+        EUI eui = EUI(address(euiProxy));
+        eui.grantRole(eui.ALLOW_ROLE(), address(this));
+
+        eud.grantRole(eud.MINT_ROLE(), address(eui));
+        eud.grantRole(eui.BURN_ROLE(), address(eui));
+
+        assertEq(eud.balanceOf(address(this)), 0, "EUD balance should be 0");
+        assertEq(eui.balanceOf(address(this)), 0, "Initial EUI balance should be 0");
+        assertEq(eui.totalSupply(), 0, "Initial EUI total supply should be 0");
+        assertEq(eud.totalSupply(), 0, "Initial EUD total supply should be 0");
+        assertEq(eui.totalAssets(), 0, "Initial EUI total assets should be 0");
+
+        eud.mint(address(this), 1000);
+        assertEq(eud.balanceOf(address(this)), 1000, "Step 1: EUD balance should be 1000");
+        assertEq(eui.balanceOf(address(this)), 0, "Step 1: EUI balance should be 0");
+        assertEq(eui.totalSupply(), 0, "Step 1: EUI total supply should be 0");
+        assertEq(eud.totalSupply(), 1000, "Step 1: EUD total supply should be 1000");
+        assertEq(eui.totalAssets(), 0, "Step 1: EUI total assets should be 0");
+
+        eud.setEui(address(eui));
+        assertEq(eud.balanceOf(address(this)), 1000, "Step 2: EUD balance should be 1000");
+        assertEq(eui.balanceOf(address(this)), 0, "Step 2: EUI balance should be 0");
+        assertEq(eui.totalSupply(), 0, "Step 2: EUI total supply should be 0");
+        assertEq(eud.totalSupply(), 1000, "Step 2: EUD total supply should be 1000");
+        assertEq(eui.totalAssets(), 0, "Step 2: EUI total assets should be 0");
+
+        eui.addToAllowlist(address(this));
+        eui.deposit(500, address(this));
+        assertEq(eud.balanceOf(address(this)), 500, "Step 3: EUD balance should be 500");
+        assertEq(eui.balanceOf(address(this)), 500, "Step 3: EUI balance should be 500");
+        assertEq(eui.totalSupply(), 500, "Step 3: EUI total supply should be 500");
+        assertEq(eud.totalSupply(), 1000, "Step 3: EUD total supply should be 1000");
+        assertEq(eui.totalAssets(), 500, "Step 3: EUI total assets should be 500");
     }
 }
 

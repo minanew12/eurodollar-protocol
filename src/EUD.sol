@@ -84,31 +84,11 @@ contract EUD is
 
     /// ---------- ERC20 FUNCTIONS ---------- ///
     /**
-     * @notice Returns the balance of a specified account.
-     * @notice If the account is the EUI contract, return the total assets of the EUI.
-     * @param account The address of the account to check.
-     * @return The balance of the specified account.
-     */
-    function balanceOf(address account) public view override returns (uint256) {
-        // TODO: Do we actually want to have this SLOAD for all balanceOf calls?
-        // ie. can we somehow optimize for most calls not being EUI?
-        // One idea was to check of the super.balanceOf returned 0 and then check
-        // if the account was EUI, but that would lead to weird behavior if someone
-        // sent EUD to the EUI address
-        if (address(eui) == account) {
-            return eui.totalAssets();
-        }
-
-        return super.balanceOf(account);
-    }
-
-    /**
      * @notice Returns the total supply of the token.
      * @notice If the EUI contract is set, include the total assets of the EUI.
      * @return The total supply of the token.
      */
     function totalSupply() public view override returns (uint256) {
-        // TODO: Can we assume that the EUI contract will always be set?
         uint256 euiTotalAssets = 0;
         if (address(eui) != address(0)) {
             euiTotalAssets = eui.totalAssets();
