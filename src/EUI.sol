@@ -552,7 +552,11 @@ contract EUI is
         }
     }
 
-    // TODO remove me
+    /**
+     * @notice Add a single address to the allow list.
+     * @notice Only callable by accounts with the `ALLOW_ROLE`.
+     * @param account The address to be added to the allow list.
+     */
     function addToAllowlist(address account) external onlyRole(ALLOW_ROLE) {
         _addToAllowlist(account);
     }
@@ -568,7 +572,11 @@ contract EUI is
         }
     }
 
-    // TODO remove me
+    /**
+     * @notice  Remove a single address from the allow list.
+     * @notice  Only callable by accounts with the `ALLOW_ROLE`.
+     * @param   account The address to be removed from the allow list.
+     */
     function removeFromAllowlist(address account) external onlyRole(ALLOW_ROLE) {
         _removeFromAllowlist(account);
     }
