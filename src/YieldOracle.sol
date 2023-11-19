@@ -5,6 +5,7 @@ pragma solidity ^0.8.21;
 
 import {Pausable} from "oz/security/Pausable.sol";
 import {AccessControl} from "oz/access/AccessControl.sol";
+import {Math} from "oz/utils/math/Math.sol";
 
 error InsufficientUpdateDelay();
 error InsufficientCommitDelay();
@@ -183,7 +184,7 @@ contract YieldOracle is AccessControl {
      * @return uint256 The equivalent amount of EUI tokens based on the current price from the yield oracle.
      */
     function fromEudToEui(uint256 eudAmount) public view returns (uint256) {
-        return mulDivDown(eudAmount, 10 ** 18, currentPrice);
+        return Math.mulDiv(eudAmount, 10 ** 18, currentPrice);
     }
 
     /**
@@ -192,22 +193,6 @@ contract YieldOracle is AccessControl {
      * @return uint256 The equivalent amount of EUD tokens based on the old price from the yield oracle.
      */
     function fromEuiToEud(uint256 euiAmount) public view returns (uint256) {
-        return mulDivDown(euiAmount, previousPrice, 10 ** 18);
-    }
-}
-
-/*
- * Lifted from solmate
- */
-uint256 constant MAX_UINT256 = 2 ** 256 - 1;
-
-function mulDivDown(uint256 x, uint256 y, uint256 denominator) pure returns (uint256 z) {
-    /// @solidity memory-safe-assembly
-    assembly {
-        // Equivalent to require(denominator != 0 && (y == 0 || x <= type(uint256).max / y))
-        if iszero(mul(denominator, iszero(mul(y, gt(x, div(MAX_UINT256, y)))))) { revert(0, 0) }
-
-        // Divide x * y by the denominator.
-        z := div(mul(x, y), denominator)
+        return Math.mulDiv(euiAmount, previousPrice, 10 ** 18);
     }
 }
