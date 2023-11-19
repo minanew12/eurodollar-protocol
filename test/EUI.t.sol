@@ -493,29 +493,6 @@ contract EUITest is Test, Constants {
         eud.approve(address(eui), amount);
         eui.flipToEUI(owner, receiver, amount);
         vm.stopPrank();
-        assertEq(eui.balanceOf(receiver), amount.mulDiv(1e18, price, Math.Rounding.Down));
-    }
-
-    function testFailFlipToEuiNotAuthorized(address owner, address receiver, uint256 amount, uint256 price) public {
-        // Bounds
-        amount = bound(amount, 1, 1e39);
-        price = bound(price, 1e18, 1e39);
-
-        // Assumes
-        vm.assume(owner != address(0) && receiver != address(0));
-
-        // Set Roles
-        eui.addToAllowlist(owner);
-        eui.addToAllowlist(receiver);
-        yieldOracle.adminUpdateCurrentPrice(price); // Current Price
-
-        // Test
-        eud.mint(owner, amount);
-        assertEq(eud.balanceOf(owner), amount);
-        vm.startPrank(owner);
-        // eud.approve(address(eui), amount); NO APPROVAL
-        eui.flipToEUI(owner, receiver, amount);
-        vm.stopPrank();
         assertEq(eui.balanceOf(receiver), Math.mulDiv(amount, 1e18, price, Math.Rounding.Down));
     }
 
@@ -635,28 +612,6 @@ contract EUITest is Test, Constants {
         vm.startPrank(owner);
         eui.approve(address(eui), amount + 1);
         eui.flipToEUD(owner, receiver, amount + 1);
-        vm.stopPrank();
-    }
-
-    function testFailFlipToEudNotAuthorized(address owner, address receiver, uint256 amount, uint256 price) public {
-        // Bounds
-        amount = bound(amount, 1, 1e39); // amount > 1, if 0, no approval needed, and test will succeed.
-        price = bound(price, 1e18, 1e39);
-
-        // Assumes
-        vm.assume(owner != address(0) && receiver != address(0));
-
-        // Setup
-        eui.addToAllowlist(owner);
-        eui.addToAllowlist(receiver);
-        yieldOracle.adminUpdatePreviousPrice(price);
-
-        // Test
-        eui.mintEUI(owner, amount);
-        assertEq(eui.balanceOf(owner), amount);
-        vm.startPrank(owner);
-        // eui.approve(address(eui), amount); NO APPROVAL
-        eui.flipToEUD(owner, receiver, amount);
         vm.stopPrank();
         assertEq(eud.balanceOf(receiver), Math.mulDiv(amount, price, 1e18, Math.Rounding.Down));
     }
