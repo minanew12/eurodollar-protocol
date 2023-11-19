@@ -351,6 +351,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
     function testReclaim(address account1, address account2, uint256 amount) public {
         vm.assume(account1 != address(0) && account2 != address(0));
         eui.addToAllowlist(account1);
+        eui.addToAllowlist(account2);
         eui.mintEUI(account1, amount);
         assertEq(eui.balanceOf(account1), amount);
         eui.reclaim(account1, account2, amount);
