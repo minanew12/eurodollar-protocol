@@ -18,3 +18,6 @@ docs/
 
 # Mac
 .DS_Store
+
+lcov.info
+coverage/
