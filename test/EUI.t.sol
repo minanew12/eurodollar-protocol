@@ -1159,11 +1159,34 @@ contract EUIv2 is EUI {
     function initializeV2() public reinitializer(2) {}
 }
 
+contract FlipFlop is Test, EuroDollarSetup {
+    function test_canDepostWithApproval() public {
+        address nobody = makeAddr("nobody");
 
+        address someone = makeAddr("someone");
 
+        eud.mint(someone, 100);
+        eui.addToAllowlist(someone);
 
+        vm.prank(someone);
+        eud.approve(nobody, 100);
 
+        vm.prank(nobody);
+        eui.flipToEUI(someone, someone, 100);
 
+        assertEq(eui.balanceOf(someone), 100);
+
+        // check nobody flip back reverts
+        vm.expectRevert(bytes("ERC20: insufficient allowance"));
+        vm.prank(nobody);
+        eui.flipToEUD(someone, someone, 100);
+
+        vm.prank(someone);
+        eui.flipToEUD(someone, someone, 100);
+
+        assertEq(eud.balanceOf(someone), 100);
+    }
+}
 
 contract Paused is Test, EuroDollarSetup {
     function setUp() public override {
