@@ -568,6 +568,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
         // Setup
         eui.addToAllowlist(owner);
         eui.addToAllowlist(receiver);
+        yieldOracle.adminUpdateCurrentPrice(price);
         yieldOracle.adminUpdatePreviousPrice(price);
 
         // Test
@@ -618,6 +619,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
         // Setup
         eui.addToAllowlist(owner);
         eui.addToAllowlist(receiver);
+        yieldOracle.adminUpdateCurrentPrice(price);
         yieldOracle.adminUpdatePreviousPrice(price);
 
         // Test
@@ -641,6 +643,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
         // Setup
         eui.addToAllowlist(owner);
         eui.addToAllowlist(receiver);
+        yieldOracle.adminUpdateCurrentPrice(price);
         yieldOracle.adminUpdatePreviousPrice(price);
 
         // Test
@@ -680,8 +683,8 @@ contract EUITest is Test, EuroDollarSetup, Constants {
         previousPrice = bound(previousPrice, 1e18, 1e37);
         currentPrice = bound(currentPrice, previousPrice, 1e37);
         amount = bound(amount, 1, 1e37);
-        yieldOracle.adminUpdatePreviousPrice(previousPrice);
         yieldOracle.adminUpdateCurrentPrice(currentPrice);
+        yieldOracle.adminUpdatePreviousPrice(previousPrice);
         eud.mint(address(this), amount);
         assertEq(eui.convertToShares(amount), Math.mulDiv(amount, 1e18, eui.yieldOracle().currentPrice()));
     }
@@ -690,8 +693,8 @@ contract EUITest is Test, EuroDollarSetup, Constants {
         previousPrice = bound(previousPrice, 1e18, 1e37);
         currentPrice = bound(currentPrice, previousPrice, 1e37);
         amount = bound(amount, 1, 1e37);
-        yieldOracle.adminUpdatePreviousPrice(previousPrice);
         yieldOracle.adminUpdateCurrentPrice(currentPrice);
+        yieldOracle.adminUpdatePreviousPrice(previousPrice);
         eui.mintEUI(address(this), amount);
         assertEq(eui.convertToAssets(amount), Math.mulDiv(amount, eui.yieldOracle().previousPrice(), 1e18));
     }
@@ -708,8 +711,8 @@ contract EUITest is Test, EuroDollarSetup, Constants {
     function testPreviewDeposit(uint256 amount, uint256 previousPrice, uint256 currentPrice) public {
         previousPrice = bound(previousPrice, 1e18, 1e37);
         currentPrice = bound(currentPrice, previousPrice, 1e37);
-        yieldOracle.adminUpdatePreviousPrice(previousPrice);
         yieldOracle.adminUpdateCurrentPrice(currentPrice);
+        yieldOracle.adminUpdatePreviousPrice(previousPrice);
         amount = bound(amount, 0, 1e39);
         assertEq(
             eui.previewDeposit(amount), Math.mulDiv(amount, 1e18, eui.yieldOracle().currentPrice(), Math.Rounding.Down)
@@ -727,8 +730,8 @@ contract EUITest is Test, EuroDollarSetup, Constants {
     {
         //Bounds
         amount = bound(amount, 0, 1e39);
-        currentPrice = bound(currentPrice, 1e18, 1e39);
-        previousPrice = bound(previousPrice, currentPrice, 1e39);
+        previousPrice = bound(previousPrice, MIN_PRICE, 1e39);
+        currentPrice = bound(currentPrice, previousPrice, 1e39);
 
         // Assumes
         vm.assume(owner != address(0) && receiver != address(0));
@@ -828,8 +831,8 @@ contract EUITest is Test, EuroDollarSetup, Constants {
     function testPreviewMint(uint256 amount, uint256 previousPrice, uint256 currentPrice) public {
         previousPrice = bound(previousPrice, 1e18, 1e37);
         currentPrice = bound(currentPrice, previousPrice, 1e37);
-        yieldOracle.adminUpdatePreviousPrice(previousPrice);
         yieldOracle.adminUpdateCurrentPrice(currentPrice);
+        yieldOracle.adminUpdatePreviousPrice(previousPrice);
         amount = bound(amount, 0, 1e39);
         assertEq(
             eui.previewMint(amount), Math.mulDiv(amount, eui.yieldOracle().previousPrice(), 1e18, Math.Rounding.Down)
@@ -898,8 +901,8 @@ contract EUITest is Test, EuroDollarSetup, Constants {
     function testMaxWithdraw(address account, uint256 amount, uint256 previousPrice, uint256 currentPrice) public {
         previousPrice = bound(previousPrice, 1e18, 1e37);
         currentPrice = bound(currentPrice, previousPrice, 1e37);
-        yieldOracle.adminUpdatePreviousPrice(previousPrice);
         yieldOracle.adminUpdateCurrentPrice(currentPrice);
+        yieldOracle.adminUpdatePreviousPrice(previousPrice);
         amount = bound(amount, 0, 1e39);
         vm.assume(account != address(0));
         eui.addToAllowlist(account);
@@ -910,6 +913,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
     function testMaxWithdrawPaused(address account, uint256 amount, uint256 price) public {
         amount = bound(amount, 0, 1e39);
         price = bound(price, 1e18, 1e39);
+        yieldOracle.adminUpdateCurrentPrice(price);
         yieldOracle.adminUpdatePreviousPrice(price);
         vm.assume(account != address(0));
         eui.addToAllowlist(account);
@@ -921,8 +925,8 @@ contract EUITest is Test, EuroDollarSetup, Constants {
     function testPreviewWithdraw(uint256 amount, uint256 previousPrice, uint256 currentPrice) public {
         previousPrice = bound(previousPrice, 1e18, 1e37);
         currentPrice = bound(currentPrice, previousPrice, 1e37);
-        yieldOracle.adminUpdatePreviousPrice(previousPrice);
         yieldOracle.adminUpdateCurrentPrice(currentPrice);
+        yieldOracle.adminUpdatePreviousPrice(previousPrice);
         amount = bound(amount, 0, 1e39);
         assertEq(eui.previewWithdraw(amount), Math.mulDiv(amount, 1e18, yieldOracle.currentPrice(), Math.Rounding.Down));
     }
@@ -947,8 +951,8 @@ contract EUITest is Test, EuroDollarSetup, Constants {
         // Setup
         eui.addToAllowlist(owner);
         eui.addToAllowlist(receiver);
-        yieldOracle.adminUpdatePreviousPrice(previousPrice);
         yieldOracle.adminUpdateCurrentPrice(currentPrice);
+        yieldOracle.adminUpdatePreviousPrice(previousPrice);
 
         // Test
         uint256 eudAmount = yieldOracle.fromEuiToEud(amount);
@@ -1049,8 +1053,8 @@ contract EUITest is Test, EuroDollarSetup, Constants {
     function testPreviewRedeem(uint256 amount, uint256 previousPrice, uint256 currentPrice) public {
         previousPrice = bound(previousPrice, 1e18, 1e37);
         currentPrice = bound(currentPrice, previousPrice, 1e37);
-        yieldOracle.adminUpdatePreviousPrice(previousPrice);
         yieldOracle.adminUpdateCurrentPrice(currentPrice);
+        yieldOracle.adminUpdatePreviousPrice(previousPrice);
         amount = bound(amount, 0, 1e39);
         assertEq(
             eui.previewRedeem(amount), Math.mulDiv(amount, eui.yieldOracle().previousPrice(), 1e18, Math.Rounding.Down)
@@ -1068,6 +1072,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
         // Setup
         eui.addToAllowlist(owner);
         eui.addToAllowlist(receiver);
+        yieldOracle.adminUpdateCurrentPrice(price);
         yieldOracle.adminUpdatePreviousPrice(price);
 
         // Test
