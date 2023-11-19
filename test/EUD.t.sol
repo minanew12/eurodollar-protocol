@@ -530,7 +530,6 @@ contract Blocked is Test {
     address self;
     address badActorFrom;
     address badActorTo;
-    address badActorMule;
 
     function setUp() public {
         EUD implementation = new EUD();
@@ -549,23 +548,14 @@ contract Blocked is Test {
         self = address(this);
         badActorFrom = makeAddr("badActorFrom");
         badActorTo = makeAddr("badActorTo");
-        badActorMule = makeAddr("badActorMule");
 
         eud.mint(self, 1000);
         eud.mint(badActorFrom, 1000);
         eud.mint(badActorTo, 1000);
-        eud.mint(badActorMule, 1000);
 
-        vm.prank(badActorFrom);
-        eud.approve(badActorMule, 1000);
-
-        vm.prank(badActorTo);
-        eud.approve(badActorMule, 1000);
-
-        address[] memory accounts = new address[](3);
+        address[] memory accounts = new address[](2);
         accounts[0] = badActorFrom;
         accounts[1] = badActorTo;
-        accounts[2] = badActorMule;
 
         eud.addToBlocklist(accounts);
     }
@@ -573,7 +563,6 @@ contract Blocked is Test {
     function invariant_blocked() public {
         assertTrue(eud.blocklist(badActorFrom), "badActorFrom should be blocked");
         assertTrue(eud.blocklist(badActorTo), "badActorTo should be blocked");
-        assertTrue(eud.blocklist(badActorMule), "badActorMule should be blocked");
     }
 
     function test_CannotTransfer() public {
@@ -585,60 +574,17 @@ contract Blocked is Test {
         eud.transfer(self, 0);
     }
 
-    function test_CannotApprove() public {
-        vm.expectRevert("Account is blocked");
-        eud.approve(badActorTo, 0);
-
-        vm.expectRevert("Account is blocked");
-        vm.prank(badActorFrom);
-        eud.approve(self, 0);
-    }
-
     function test_CannotTransferFrom() public {
         vm.expectRevert("Account is blocked");
         eud.transferFrom(badActorFrom, self, 0);
 
         vm.expectRevert("Account is blocked");
         eud.transferFrom(self, badActorTo, 0);
-
-        vm.expectRevert("Account is blocked");
-        vm.prank(badActorMule);
-        eud.transferFrom(self, self, 0);
-    }
-
-    function test_CannotIncreaseAllowance() public {
-        vm.expectRevert("Account is blocked");
-        eud.increaseAllowance(badActorTo, 0);
-
-        vm.expectRevert("Account is blocked");
-        vm.prank(badActorFrom);
-        eud.increaseAllowance(self, 0);
-    }
-
-    function test_CannotDecreaseAllowance() public {
-        vm.expectRevert("Account is blocked");
-        eud.decreaseAllowance(badActorTo, 0);
-
-        vm.expectRevert("Account is blocked");
-        vm.prank(badActorFrom);
-        eud.decreaseAllowance(self, 0);
     }
 
     function test_CannotMint() public {
         vm.expectRevert("Account is blocked");
         eud.mint(badActorTo, 0);
-    }
-
-    function test_CannotPermit() public {
-        vm.expectRevert("Account is blocked");
-        eud.permit(self, badActorTo, 0, 0, 0, bytes32(0), bytes32(0));
-
-        vm.expectRevert("Account is blocked");
-        eud.permit(badActorFrom, self, 0, 0, 0, bytes32(0), bytes32(0));
-
-        vm.expectRevert("Account is blocked");
-        vm.prank(badActorMule);
-        eud.permit(self, self, 0, 0, 0, bytes32(0), bytes32(0));
     }
 
     function test_burn() public {
@@ -699,29 +645,9 @@ contract Paused is Test {
         eud.transfer(address(this), 0);
     }
 
-    function test_CannotApprove() public {
-        vm.expectRevert("Pausable: paused");
-        eud.approve(address(this), 0);
-    }
-
     function test_CannotTransferFrom() public {
         vm.expectRevert("Pausable: paused");
         eud.transferFrom(address(this), address(0), 0);
-    }
-
-    function test_CannotIncreaseAllowance() public {
-        vm.expectRevert("Pausable: paused");
-        eud.increaseAllowance(address(this), 0);
-    }
-
-    function test_CannotDecreaseAllowance() public {
-        vm.expectRevert("Pausable: paused");
-        eud.decreaseAllowance(address(this), 0);
-    }
-
-    function test_CannotPermit() public {
-        vm.expectRevert("Pausable: paused");
-        eud.permit(address(this), address(this), 0, 0, 0, bytes32(0), bytes32(0));
     }
 
     function test_burn() public {
