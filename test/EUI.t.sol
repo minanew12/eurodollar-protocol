@@ -589,35 +589,30 @@ contract EUITest is Test, Constants {
         assertEq(eud.balanceOf(receiver), Math.mulDiv(amount, price, 1e18, Math.Rounding.Down));
     }
 
-    function testFlipToEudAttack(
-        address owner,
-        address receiver,
-        uint256 amount,
-        uint256 price,
-        address attacker
-    )
-        public
-    {
-        // Bounds
-        amount = bound(amount, 0, 1e39);
-        price = bound(price, 1e18, 1e39);
-
+    function testFlipToEudAttack(address owner, uint256 amount, address attacker) public {
         // Assumes
-        vm.assume(owner != address(0) && receiver != address(0));
+        vm.assume(owner != address(0));
+        vm.assume(attacker != address(0) && attacker != address(this));
+
+        // Bounds
+        amount = bound(amount, 1, 1e39);
 
         // Setup
         eui.addToAllowlist(owner);
-        eui.addToAllowlist(receiver);
-        yieldOracle.adminUpdatePreviousPrice(price);
 
         // Test
         eui.mintEUI(owner, amount);
         assertEq(eui.balanceOf(owner), amount);
+
         vm.prank(owner);
         eui.approve(address(eui), amount);
-        vm.startPrank(attacker);
+
+        assertEq(eud.balanceOf(attacker), 0, "Initial attacker balance is 0");
+
+        vm.expectRevert();
+        vm.prank(attacker);
         eui.flipToEUD(owner, attacker, amount);
-        vm.stopPrank();
+
         assertEq(eud.balanceOf(attacker), 0, "Attacker did not receive any EUD");
     }
 
