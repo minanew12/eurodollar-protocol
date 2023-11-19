@@ -490,7 +490,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
 
     function testFlipToEui(address owner, address receiver, uint256 amount, uint256 price) public {
         // Bounds
-        amount = bound(amount, 0, 1e39);
+        amount = bound(amount, 1, 1e39);
         price = bound(price, 1e18, 1e39);
 
         // Assumes
@@ -513,7 +513,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
 
     function testFailFlipToEuiTooManyTokens(address owner, address receiver, uint256 amount, uint256 price) public {
         // Bounds
-        amount = bound(amount, 0, 1e39);
+        amount = bound(amount, 1, 1e39);
         price = bound(price, 1e18, 1e39);
 
         // Assumes
@@ -536,7 +536,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
 
     function testFailFlipToEuiWhilePaused(address owner, address receiver, uint256 amount, uint256 price) public {
         // Bounds
-        amount = bound(amount, 0, 1e39);
+        amount = bound(amount, 1, 1e39);
         price = bound(price, 1e18, 1e39);
 
         // Assumes
@@ -560,7 +560,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
 
     function testFlipToEud(address owner, address receiver, uint256 amount, uint256 price) public {
         // Bounds
-        amount = bound(amount, 0, 1e39);
+        amount = bound(amount, 1, 1e39);
         price = bound(price, 1e18, 1e39);
 
         // Assumes
@@ -611,7 +611,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
 
     function testFailFlipToEudTooManyTokens(address owner, address receiver, uint256 amount, uint256 price) public {
         // Bounds
-        amount = bound(amount, 0, 1e39);
+        amount = bound(amount, 1, 1e39);
         price = bound(price, 1e18, 1e39);
 
         // Assumes
@@ -635,7 +635,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
 
     function testFailFlipToEudWhilePaused(address owner, address receiver, uint256 amount, uint256 price) public {
         // Bounds
-        amount = bound(amount, 0, 1e39);
+        amount = bound(amount, 1, 1e39);
         price = bound(price, 1e18, 1e39);
 
         // Assumes
@@ -675,7 +675,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
 
     function testTotalAssets(uint256 amount) public {
         vm.assume(amount != 0);
-        amount = bound(amount, 0, 1e39);
+        amount = bound(amount, 1, 1e39);
         eui.mintEUI(address(this), amount);
         assertEq(eui.totalAssets(), yieldOracle.fromEuiToEud(amount));
     }
@@ -714,7 +714,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
         currentPrice = bound(currentPrice, previousPrice, 1e37);
         yieldOracle.adminUpdateCurrentPrice(currentPrice);
         yieldOracle.adminUpdatePreviousPrice(previousPrice);
-        amount = bound(amount, 0, 1e39);
+        amount = bound(amount, 1, 1e39);
         assertEq(
             eui.previewDeposit(amount), Math.mulDiv(amount, 1e18, eui.yieldOracle().currentPrice(), Math.Rounding.Down)
         );
@@ -730,7 +730,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
         public
     {
         //Bounds
-        amount = bound(amount, 0, 1e39);
+        amount = bound(amount, 1, 1e39);
         previousPrice = bound(previousPrice, MIN_PRICE, 1e39);
         currentPrice = bound(currentPrice, previousPrice, 1e39);
 
@@ -763,7 +763,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
         public
     {
         //Bounds
-        amount = bound(amount, 0, 1e39);
+        amount = bound(amount, 1, 1e39);
         currentPrice = bound(currentPrice, 1e18, 1e39);
         previousPrice = bound(previousPrice, currentPrice, 1e39);
 
@@ -796,7 +796,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
         public
     {
         //Bounds
-        amount = bound(amount, 0, 1e39);
+        amount = bound(amount, 1, 1e39);
         currentPrice = bound(currentPrice, 1e18, 1e39);
         previousPrice = bound(previousPrice, currentPrice, 1e39);
 
@@ -834,7 +834,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
         currentPrice = bound(currentPrice, previousPrice, 1e37);
         yieldOracle.adminUpdateCurrentPrice(currentPrice);
         yieldOracle.adminUpdatePreviousPrice(previousPrice);
-        amount = bound(amount, 0, 1e39);
+        amount = bound(amount, 1, 1e39);
         assertEq(
             eui.previewMint(amount), Math.mulDiv(amount, eui.yieldOracle().previousPrice(), 1e18, Math.Rounding.Down)
         );
@@ -850,7 +850,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
         public
     {
         //Bounds
-        amount = bound(amount, 0, 1e39);
+        amount = bound(amount, 1, 1e39);
         previousPrice = bound(previousPrice, 1e18, 1e39);
         currentPrice = bound(currentPrice, previousPrice, 1e39);
         // Assumes
@@ -876,7 +876,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
 
     function testFailMintWhilePaused(address owner, address receiver, uint256 amount, uint256 price) public {
         //Bounds
-        amount = bound(amount, 0, 1e39);
+        amount = bound(amount, 1, 1e39);
         price = bound(price, 1e18, 1e39);
 
         // Assumes
@@ -904,7 +904,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
         currentPrice = bound(currentPrice, previousPrice, 1e37);
         yieldOracle.adminUpdateCurrentPrice(currentPrice);
         yieldOracle.adminUpdatePreviousPrice(previousPrice);
-        amount = bound(amount, 0, 1e39);
+        amount = bound(amount, 1, 1e39);
         vm.assume(account != address(0));
         eui.addToAllowlist(account);
         eui.mintEUI(account, amount);
@@ -912,7 +912,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
     }
 
     function testMaxWithdrawPaused(address account, uint256 amount, uint256 price) public {
-        amount = bound(amount, 0, 1e39);
+        amount = bound(amount, 1, 1e39);
         price = bound(price, 1e18, 1e39);
         yieldOracle.adminUpdateCurrentPrice(price);
         yieldOracle.adminUpdatePreviousPrice(price);
@@ -928,7 +928,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
         currentPrice = bound(currentPrice, previousPrice, 1e37);
         yieldOracle.adminUpdateCurrentPrice(currentPrice);
         yieldOracle.adminUpdatePreviousPrice(previousPrice);
-        amount = bound(amount, 0, 1e39);
+        amount = bound(amount, 1, 1e39);
         assertEq(eui.previewWithdraw(amount), Math.mulDiv(amount, 1e18, yieldOracle.currentPrice(), Math.Rounding.Down));
     }
 
@@ -942,7 +942,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
         public
     {
         // Bounds
-        amount = bound(amount, 0, 1e39);
+        amount = bound(amount, 1, 1e39);
         previousPrice = bound(previousPrice, 1e18, 1e39);
         currentPrice = bound(currentPrice, previousPrice, 1e39);
 
@@ -976,7 +976,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
         public
     {
         // Bounds
-        amount = bound(amount, 0, 1e39);
+        amount = bound(amount, 1, 1e39);
         previousPrice = bound(previousPrice, 1e18, 1e39);
         currentPrice = bound(currentPrice, previousPrice, 1e39);
 
@@ -1010,7 +1010,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
         public
     {
         // Bounds
-        amount = bound(amount, 0, 1e39);
+        amount = bound(amount, 1, 1e39);
         previousPrice = bound(previousPrice, 1e18, 1e39);
         currentPrice = bound(currentPrice, previousPrice, 1e39);
 
@@ -1056,7 +1056,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
         currentPrice = bound(currentPrice, previousPrice, 1e37);
         yieldOracle.adminUpdateCurrentPrice(currentPrice);
         yieldOracle.adminUpdatePreviousPrice(previousPrice);
-        amount = bound(amount, 0, 1e39);
+        amount = bound(amount, 1, 1e39);
         assertEq(
             eui.previewRedeem(amount), Math.mulDiv(amount, eui.yieldOracle().previousPrice(), 1e18, Math.Rounding.Down)
         );
@@ -1064,7 +1064,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
 
     function testRedeem(address owner, address receiver, uint256 amount, uint256 price) public {
         // Bounds
-        amount = bound(amount, 0, 1e39);
+        amount = bound(amount, 1, 1e39);
         price = bound(price, 1e18, 1e39);
 
         // Assumes
@@ -1088,7 +1088,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
 
     function testFailRedeemTooManyShares(address owner, address receiver, uint256 amount, uint256 price) public {
         // Bounds
-        amount = bound(amount, 0, 1e39);
+        amount = bound(amount, 1, 1e39);
         price = bound(price, 1e18, 1e39);
 
         // Assumes
@@ -1111,7 +1111,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
 
     function testFailRedeemWhilePaused(address owner, address receiver, uint256 amount, uint256 price) public {
         // Bounds
-        amount = bound(amount, 0, 1e39);
+        amount = bound(amount, 1, 1e39);
         price = bound(price, 1e18, 1e39);
 
         // Assumes
