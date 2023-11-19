@@ -57,14 +57,13 @@ contract YieldOracleTest is Test, YieldOracleInvariants {
     }
 
     function testConstructor() public {
-        YieldOracle newOracle = new YieldOracle();
-        assertTrue(newOracle.hasRole(newOracle.DEFAULT_ADMIN_ROLE(), address(this)));
-        assertEq(newOracle.previousPrice(), MIN_PRICE);
-        assertEq(newOracle.currentPrice(), MIN_PRICE);
-        assertEq(newOracle.nextPrice(), NO_PRICE);
-        assertEq(newOracle.maxPriceIncrease(), 1e17);
-        assertEq(newOracle.updateDelay(), 1 days);
-        assertEq(newOracle.commitDelay(), 1 hours);
+        assertTrue(yieldOracle.hasRole(yieldOracle.DEFAULT_ADMIN_ROLE(), address(this)));
+        assertEq(yieldOracle.previousPrice(), MIN_PRICE);
+        assertEq(yieldOracle.currentPrice(), MIN_PRICE);
+        assertEq(yieldOracle.nextPrice(), NO_PRICE);
+        assertEq(yieldOracle.maxPriceIncrease(), 1e17);
+        assertEq(yieldOracle.updateDelay(), 1 days);
+        assertEq(yieldOracle.commitDelay(), 1 hours);
     }
 
     function testGrantOracleRole(address account) public {
