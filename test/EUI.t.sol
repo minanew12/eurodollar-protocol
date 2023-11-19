@@ -14,8 +14,6 @@ import {YieldOracle} from "../src/YieldOracle.sol";
 import {Constants} from "./Constants.sol";
 
 contract EUITest is Test, Constants {
-    using Math for uint256;
-
     EUI public eui;
     EUD public eud;
     YieldOracle public yieldOracle;
@@ -518,7 +516,7 @@ contract EUITest is Test, Constants {
         // eud.approve(address(eui), amount); NO APPROVAL
         eui.flipToEUI(owner, receiver, amount);
         vm.stopPrank();
-        assertEq(eui.balanceOf(receiver), amount.mulDiv(1e18, price, Math.Rounding.Down));
+        assertEq(eui.balanceOf(receiver), Math.mulDiv(amount, 1e18, price, Math.Rounding.Down));
     }
 
     function testFailFlipToEuiTooManyTokens(address owner, address receiver, uint256 amount, uint256 price) public {
@@ -541,7 +539,7 @@ contract EUITest is Test, Constants {
         eud.approve(address(eui), amount + 1);
         eui.flipToEUI(owner, receiver, amount + 1); // Test you cannot flip more than what as been approved
         vm.stopPrank();
-        assertEq(eui.balanceOf(receiver), amount.mulDiv(1e18, price, Math.Rounding.Down));
+        assertEq(eui.balanceOf(receiver), Math.mulDiv(amount, 1e18, price, Math.Rounding.Down));
     }
 
     function testFailFlipToEuiWhilePaused(address owner, address receiver, uint256 amount, uint256 price) public {
@@ -565,7 +563,7 @@ contract EUITest is Test, Constants {
         eud.approve(address(eui), amount);
         eui.flipToEUI(owner, receiver, amount);
         vm.stopPrank();
-        assertEq(eui.balanceOf(receiver), amount.mulDiv(1e18, price, Math.Rounding.Down));
+        assertEq(eui.balanceOf(receiver), Math.mulDiv(amount, 1e18, price, Math.Rounding.Down));
     }
 
     function testFlipToEud(address owner, address receiver, uint256 amount, uint256 price) public {
@@ -588,7 +586,7 @@ contract EUITest is Test, Constants {
         eui.approve(address(eui), amount);
         eui.flipToEUD(owner, receiver, amount);
         vm.stopPrank();
-        assertEq(eud.balanceOf(receiver), amount.mulDiv(price, 1e18, Math.Rounding.Down));
+        assertEq(eud.balanceOf(receiver), Math.mulDiv(amount, price, 1e18, Math.Rounding.Down));
     }
 
     function testFlipToEudAttack(
@@ -620,7 +618,7 @@ contract EUITest is Test, Constants {
         vm.startPrank(attacker);
         eui.flipToEUD(owner, attacker, amount);
         vm.stopPrank();
-        assertEq(eud.balanceOf(attacker), amount.mulDiv(price, 1e18, Math.Rounding.Down));
+        assertEq(eud.balanceOf(attacker), 0, "Attacker did not receive any EUD");
     }
 
     function testFailFlipToEudTooManyTokens(address owner, address receiver, uint256 amount, uint256 price) public {
@@ -643,7 +641,6 @@ contract EUITest is Test, Constants {
         eui.approve(address(eui), amount + 1);
         eui.flipToEUD(owner, receiver, amount + 1);
         vm.stopPrank();
-        assertEq(eud.balanceOf(receiver), amount.mulDiv(price, 1e18, Math.Rounding.Down));
     }
 
     function testFailFlipToEudNotAuthorized(address owner, address receiver, uint256 amount, uint256 price) public {
@@ -666,6 +663,7 @@ contract EUITest is Test, Constants {
         // eui.approve(address(eui), amount); NO APPROVAL
         eui.flipToEUD(owner, receiver, amount);
         vm.stopPrank();
+        assertEq(eud.balanceOf(receiver), Math.mulDiv(amount, price, 1e18, Math.Rounding.Down));
     }
 
     function testFailFlipToEudWhilePaused(address owner, address receiver, uint256 amount, uint256 price) public {
@@ -689,7 +687,7 @@ contract EUITest is Test, Constants {
         eui.approve(address(eui), amount);
         eui.flipToEUD(owner, receiver, amount);
         vm.stopPrank();
-        assertEq(eud.balanceOf(receiver), amount.mulDiv(price, 1e18, Math.Rounding.Down));
+        assertEq(eud.balanceOf(receiver), Math.mulDiv(amount, price, 1e18, Math.Rounding.Down));
     }
 
     function testSetYieldOracle(address newYieldOracle) public {
@@ -721,7 +719,7 @@ contract EUITest is Test, Constants {
         yieldOracle.adminUpdatePreviousPrice(previousPrice);
         yieldOracle.adminUpdateCurrentPrice(currentPrice);
         eud.mint(address(this), amount);
-        assertEq(eui.convertToShares(amount), amount.mulDiv(1e18, eui.yieldOracle().currentPrice()));
+        assertEq(eui.convertToShares(amount), Math.mulDiv(amount, 1e18, eui.yieldOracle().currentPrice()));
     }
 
     function testConvertToAssets(uint256 amount, uint256 previousPrice, uint256 currentPrice) public {
@@ -731,7 +729,7 @@ contract EUITest is Test, Constants {
         yieldOracle.adminUpdatePreviousPrice(previousPrice);
         yieldOracle.adminUpdateCurrentPrice(currentPrice);
         eui.mintEUI(address(this), amount);
-        assertEq(eui.convertToAssets(amount), amount.mulDiv(eui.yieldOracle().previousPrice(), 1e18));
+        assertEq(eui.convertToAssets(amount), Math.mulDiv(amount, eui.yieldOracle().previousPrice(), 1e18));
     }
 
     function testMaxDeposit(address account) public {
@@ -749,7 +747,9 @@ contract EUITest is Test, Constants {
         yieldOracle.adminUpdatePreviousPrice(previousPrice);
         yieldOracle.adminUpdateCurrentPrice(currentPrice);
         amount = bound(amount, 0, 1e39);
-        assertEq(eui.previewDeposit(amount), amount.mulDiv(1e18, eui.yieldOracle().currentPrice(), Math.Rounding.Down));
+        assertEq(
+            eui.previewDeposit(amount), Math.mulDiv(amount, 1e18, eui.yieldOracle().currentPrice(), Math.Rounding.Down)
+        );
     }
 
     function testDeposit(
@@ -782,7 +782,7 @@ contract EUITest is Test, Constants {
         eud.approve(address(eui), amount);
         eui.deposit(amount, receiver);
         vm.stopPrank();
-        assertEq(eui.balanceOf(receiver), amount.mulDiv(1e18, currentPrice, Math.Rounding.Down));
+        assertEq(eui.balanceOf(receiver), Math.mulDiv(amount, 1e18, currentPrice, Math.Rounding.Down));
     }
 
     function testFailDepositTooManyTokens(
@@ -815,7 +815,7 @@ contract EUITest is Test, Constants {
         eud.approve(address(eui), amount + 1);
         eui.deposit(amount + 1, receiver);
         vm.stopPrank();
-        assertEq(eui.balanceOf(receiver), amount.mulDiv(1e18, currentPrice, Math.Rounding.Down));
+        assertEq(eui.balanceOf(receiver), Math.mulDiv(amount, 1e18, currentPrice, Math.Rounding.Down));
     }
 
     function testFailDepositWhilePaused(
@@ -849,7 +849,7 @@ contract EUITest is Test, Constants {
         eud.approve(address(eui), amount);
         eui.deposit(amount, receiver);
         vm.stopPrank();
-        assertEq(eui.balanceOf(receiver), amount.mulDiv(1e18, currentPrice, Math.Rounding.Down));
+        assertEq(eui.balanceOf(receiver), Math.mulDiv(amount, 1e18, currentPrice, Math.Rounding.Down));
     }
 
     function testMaxMint(address account) public {
@@ -867,7 +867,9 @@ contract EUITest is Test, Constants {
         yieldOracle.adminUpdatePreviousPrice(previousPrice);
         yieldOracle.adminUpdateCurrentPrice(currentPrice);
         amount = bound(amount, 0, 1e39);
-        assertEq(eui.previewMint(amount), amount.mulDiv(eui.yieldOracle().previousPrice(), 1e18, Math.Rounding.Down));
+        assertEq(
+            eui.previewMint(amount), Math.mulDiv(amount, eui.yieldOracle().previousPrice(), 1e18, Math.Rounding.Down)
+        );
     }
 
     function testMint(
@@ -938,7 +940,7 @@ contract EUITest is Test, Constants {
         vm.assume(account != address(0));
         eui.addToAllowlist(account);
         eui.mintEUI(account, amount);
-        assertEq(eui.maxWithdraw(account), amount.mulDiv(previousPrice, 1e18, Math.Rounding.Down));
+        assertEq(eui.maxWithdraw(account), Math.mulDiv(amount, previousPrice, 1e18, Math.Rounding.Down));
     }
 
     function testMaxWithdrawPaused(address account, uint256 amount, uint256 price) public {
@@ -958,7 +960,7 @@ contract EUITest is Test, Constants {
         yieldOracle.adminUpdatePreviousPrice(previousPrice);
         yieldOracle.adminUpdateCurrentPrice(currentPrice);
         amount = bound(amount, 0, 1e39);
-        assertEq(eui.previewWithdraw(amount), amount.mulDiv(1e18, yieldOracle.currentPrice(), Math.Rounding.Down));
+        assertEq(eui.previewWithdraw(amount), Math.mulDiv(amount, 1e18, yieldOracle.currentPrice(), Math.Rounding.Down));
     }
 
     function testWithdraw(
@@ -1086,7 +1088,9 @@ contract EUITest is Test, Constants {
         yieldOracle.adminUpdatePreviousPrice(previousPrice);
         yieldOracle.adminUpdateCurrentPrice(currentPrice);
         amount = bound(amount, 0, 1e39);
-        assertEq(eui.previewRedeem(amount), amount.mulDiv(eui.yieldOracle().previousPrice(), 1e18, Math.Rounding.Down));
+        assertEq(
+            eui.previewRedeem(amount), Math.mulDiv(amount, eui.yieldOracle().previousPrice(), 1e18, Math.Rounding.Down)
+        );
     }
 
     function testRedeem(address owner, address receiver, uint256 amount, uint256 price) public {
@@ -1109,7 +1113,7 @@ contract EUITest is Test, Constants {
         eui.approve(address(eui), amount);
         eui.redeem(amount, receiver, owner);
         vm.stopPrank();
-        assertEq(eud.balanceOf(receiver), amount.mulDiv(price, 1e18, Math.Rounding.Down));
+        assertEq(eud.balanceOf(receiver), Math.mulDiv(amount, price, 1e18, Math.Rounding.Down));
     }
 
     function testFailRedeemTooManyShares(address owner, address receiver, uint256 amount, uint256 price) public {
@@ -1132,7 +1136,7 @@ contract EUITest is Test, Constants {
         eui.approve(address(eui), amount);
         eui.redeem(amount + 1, receiver, owner);
         vm.stopPrank();
-        assertEq(eud.balanceOf(receiver), amount.mulDiv(price, 1e18, Math.Rounding.Down));
+        assertEq(eud.balanceOf(receiver), Math.mulDiv(amount, price, 1e18, Math.Rounding.Down));
     }
 
     function testFailRedeemWhilePaused(address owner, address receiver, uint256 amount, uint256 price) public {
@@ -1156,7 +1160,7 @@ contract EUITest is Test, Constants {
         eui.approve(address(eui), amount);
         eui.redeem(amount, receiver, owner);
         vm.stopPrank();
-        assertEq(eud.balanceOf(receiver), amount.mulDiv(price, 1e18, Math.Rounding.Down));
+        assertEq(eud.balanceOf(receiver), Math.mulDiv(amount, price, 1e18, Math.Rounding.Down));
     }
 
     function invariant_assetIsEud() external {
