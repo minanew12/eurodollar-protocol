@@ -22,4 +22,6 @@ interface IEUD {
     function mint(address to, uint256 amount) external;
 
     function burn(address from, uint256 amount) external;
+
+    function burnFrom(address from, address spender, uint256 amount) external;
 }
