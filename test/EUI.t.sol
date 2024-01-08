@@ -584,7 +584,7 @@ contract EUITest is Test, EuroDollarSetup, Constants {
 
     function testFlipToEudAttack(address owner, uint256 amount, address attacker) public {
         // Assumes
-        vm.assume(owner != address(0));
+        vm.assume(owner != address(0) && owner != address(attacker));
         vm.assume(attacker != address(0) && attacker != address(this));
 
         // Bounds
