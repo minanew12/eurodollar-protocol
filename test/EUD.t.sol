@@ -7,6 +7,8 @@ import {Test} from "forge-std/Test.sol";
 import {ERC1967Proxy} from "oz/proxy/ERC1967/ERC1967Proxy.sol";
 import {EUD} from "../src/EUD.sol";
 import {Constants} from "./Constants.sol";
+import {EUI} from "../src/EUI.sol";
+import {YieldOracle} from "../src/YieldOracle.sol";
 
 contract EUDTest is Test, Constants {
     EUD public eud;
@@ -174,7 +176,10 @@ contract EUDTest is Test, Constants {
     }
 
     function testAddToBlocklist(address account) public {
-        eud.addToBlocklist(account);
+        address[] memory accounts = new address[](1);
+        accounts[0] = account;
+
+        eud.addToBlocklist(accounts);
         assertTrue(eud.blocklist(account));
     }
 
@@ -183,16 +188,19 @@ contract EUDTest is Test, Constants {
         accounts[0] = account1;
         accounts[1] = account2;
         accounts[2] = account3;
-        eud.addManyToBlocklist(accounts);
+        eud.addToBlocklist(accounts);
         for (uint256 i = 0; i < accounts.length; i++) {
             assertTrue(eud.blocklist(accounts[i]));
         }
     }
 
     function testRemoveFromBlocklist(address account) public {
-        eud.addToBlocklist(account);
+        address[] memory accounts = new address[](1);
+        accounts[0] = account;
+
+        eud.addToBlocklist(accounts);
         assertTrue(eud.blocklist(account));
-        eud.removeFromBlocklist(account);
+        eud.removeFromBlocklist(accounts);
         assertTrue(!eud.blocklist(account));
     }
 
@@ -201,11 +209,11 @@ contract EUDTest is Test, Constants {
         accounts[0] = account1;
         accounts[1] = account2;
         accounts[2] = account3;
-        eud.addManyToBlocklist(accounts);
+        eud.addToBlocklist(accounts);
         for (uint256 i = 0; i < accounts.length; i++) {
             assertTrue(eud.blocklist(accounts[i]));
         }
-        eud.removeManyFromBlocklist(accounts);
+        eud.removeFromBlocklist(accounts);
         for (uint256 i = 0; i < accounts.length; i++) {
             assertTrue(!eud.blocklist(accounts[i]));
         }
@@ -213,17 +221,25 @@ contract EUDTest is Test, Constants {
 
     function testFailAddToBlocklistNotAuthorized(address account) public {
         vm.assume(account != address(this));
+
+        address[] memory accounts = new address[](1);
+        accounts[0] = account;
+
         vm.prank(account);
-        eud.addToBlocklist(account);
+        eud.addToBlocklist(accounts);
         assertTrue(eud.blocklist(account));
     }
 
     function testFailRemoveFromBlocklistNotAuthorized(address account) public {
         vm.assume(account != address(this));
-        eud.addToBlocklist(account);
+
+        address[] memory accounts = new address[](1);
+        accounts[0] = account;
+
+        eud.addToBlocklist(accounts);
         assertTrue(eud.blocklist(account));
         vm.prank(account);
-        eud.removeFromBlocklist(account);
+        eud.removeFromBlocklist(accounts);
         assertTrue(!eud.blocklist(account));
     }
 
@@ -432,7 +448,242 @@ contract EUDTest is Test, Constants {
     }
 }
 
+contract BalanceOf is Test {
+    EUD eud;
+
+    function setUp() public {
+        EUD implementation = new EUD();
+        ERC1967Proxy eudProxy = new ERC1967Proxy(
+            address(implementation),
+            abi.encodeCall(EUD.initialize, ())
+        );
+        eud = EUD(address(eudProxy));
+
+        eud.grantRole(eud.MINT_ROLE(), address(this));
+    }
+
+    function test_balanceOf() public {
+        assertEq(eud.balanceOf(address(this)), 0);
+        eud.mint(address(this), 1000);
+        assertEq(eud.balanceOf(address(this)), 1000);
+    }
+
+    function test_totalSupply() public {
+        assertEq(address(eud.eui()), address(0));
+        assertEq(eud.totalSupply(), 0);
+        eud.mint(address(this), 1000);
+        assertEq(eud.totalSupply(), 1000);
+    }
+
+    function test_balanceOfWithEui() public {
+        YieldOracle oracle = new YieldOracle();
+
+        EUI euiImplementation = new EUI(address(eud));
+        ERC1967Proxy euiProxy = new ERC1967Proxy(
+            address(euiImplementation),
+            abi.encodeCall(EUI.initialize, (address(oracle)))
+        );
+        EUI eui = EUI(address(euiProxy));
+        eui.grantRole(eui.ALLOW_ROLE(), address(this));
+
+        eud.grantRole(eud.MINT_ROLE(), address(eui));
+        eud.grantRole(eui.BURN_ROLE(), address(eui));
+
+        assertEq(eud.balanceOf(address(this)), 0, "EUD balance should be 0");
+        assertEq(eui.balanceOf(address(this)), 0, "Initial EUI balance should be 0");
+        assertEq(eui.totalSupply(), 0, "Initial EUI total supply should be 0");
+        assertEq(eud.totalSupply(), 0, "Initial EUD total supply should be 0");
+        assertEq(eui.totalAssets(), 0, "Initial EUI total assets should be 0");
+
+        eud.mint(address(this), 1000);
+        assertEq(eud.balanceOf(address(this)), 1000, "Step 1: EUD balance should be 1000");
+        assertEq(eui.balanceOf(address(this)), 0, "Step 1: EUI balance should be 0");
+        assertEq(eui.totalSupply(), 0, "Step 1: EUI total supply should be 0");
+        assertEq(eud.totalSupply(), 1000, "Step 1: EUD total supply should be 1000");
+        assertEq(eui.totalAssets(), 0, "Step 1: EUI total assets should be 0");
+
+        eud.setEui(address(eui));
+        assertEq(eud.balanceOf(address(this)), 1000, "Step 2: EUD balance should be 1000");
+        assertEq(eui.balanceOf(address(this)), 0, "Step 2: EUI balance should be 0");
+        assertEq(eui.totalSupply(), 0, "Step 2: EUI total supply should be 0");
+        assertEq(eud.totalSupply(), 1000, "Step 2: EUD total supply should be 1000");
+        assertEq(eui.totalAssets(), 0, "Step 2: EUI total assets should be 0");
+
+        eui.addToAllowlist(address(this));
+        eui.deposit(500, address(this));
+        assertEq(eud.balanceOf(address(this)), 500, "Step 3: EUD balance should be 500");
+        assertEq(eui.balanceOf(address(this)), 500, "Step 3: EUI balance should be 500");
+        assertEq(eui.totalSupply(), 500, "Step 3: EUI total supply should be 500");
+        assertEq(eud.totalSupply(), 1000, "Step 3: EUD total supply should be 1000");
+        assertEq(eui.totalAssets(), 500, "Step 3: EUI total assets should be 500");
+    }
+}
+
 // Dummy v2 contract
 contract EUDv2 is EUD {
     function initializeV2() public reinitializer(2) {}
+}
+
+contract Blocked is Test {
+    EUD eud;
+
+    address self;
+    address badActorFrom;
+    address badActorTo;
+
+    function setUp() public {
+        EUD implementation = new EUD();
+        ERC1967Proxy eudProxy = new ERC1967Proxy(
+            address(implementation),
+            abi.encodeCall(EUD.initialize, ())
+        );
+        eud = EUD(address(eudProxy));
+
+        eud.grantRole(eud.MINT_ROLE(), address(this));
+        eud.grantRole(eud.BURN_ROLE(), address(this));
+        eud.grantRole(eud.BLOCK_ROLE(), address(this));
+        eud.grantRole(eud.PAUSE_ROLE(), address(this));
+        eud.grantRole(eud.FREEZE_ROLE(), address(this));
+
+        self = address(this);
+        badActorFrom = makeAddr("badActorFrom");
+        badActorTo = makeAddr("badActorTo");
+
+        eud.mint(self, 1000);
+        eud.mint(badActorFrom, 1000);
+        eud.mint(badActorTo, 1000);
+
+        address[] memory accounts = new address[](2);
+        accounts[0] = badActorFrom;
+        accounts[1] = badActorTo;
+
+        eud.addToBlocklist(accounts);
+    }
+
+    function invariant_blocked() public {
+        assertTrue(eud.blocklist(badActorFrom), "badActorFrom should be blocked");
+        assertTrue(eud.blocklist(badActorTo), "badActorTo should be blocked");
+    }
+
+    function test_CannotTransfer() public {
+        vm.expectRevert("Account is blocked");
+        eud.transfer(badActorTo, 0);
+
+        vm.expectRevert("Account is blocked");
+        vm.prank(badActorFrom);
+        eud.transfer(self, 0);
+    }
+
+    function test_CannotTransferFrom() public {
+        vm.expectRevert("Account is blocked");
+        eud.transferFrom(badActorFrom, self, 0);
+
+        vm.expectRevert("Account is blocked");
+        eud.transferFrom(self, badActorTo, 0);
+    }
+
+    function test_CannotMint() public {
+        vm.expectRevert("Account is blocked");
+        eud.mint(badActorTo, 0);
+    }
+
+    function test_burn() public {
+        eud.burn(badActorFrom, 10);
+        assertEq(eud.balanceOf(badActorFrom), 990);
+    }
+
+    function test_reclaim() public {
+        eud.reclaim(badActorFrom, self, 10);
+        assertEq(eud.balanceOf(self), 1010);
+
+        vm.expectRevert("Account is blocked");
+        eud.reclaim(self, badActorTo, 10);
+    }
+
+    function test_freeze() public {
+        eud.freeze(badActorFrom, self, 10);
+        assertEq(eud.balanceOf(self), 1010);
+
+        vm.expectRevert("Account is blocked");
+        eud.freeze(self, badActorTo, 10);
+    }
+
+    function test_release() public {
+        vm.expectRevert("Account is blocked");
+        eud.release(self, badActorFrom, 10);
+    }
+}
+
+contract Paused is Test {
+    EUD eud;
+
+    function setUp() public {
+        EUD implementation = new EUD();
+        ERC1967Proxy eudProxy = new ERC1967Proxy(
+            address(implementation),
+            abi.encodeCall(EUD.initialize, ())
+        );
+        eud = EUD(address(eudProxy));
+
+        eud.grantRole(eud.MINT_ROLE(), address(this));
+        eud.grantRole(eud.BURN_ROLE(), address(this));
+        eud.grantRole(eud.BLOCK_ROLE(), address(this));
+        eud.grantRole(eud.PAUSE_ROLE(), address(this));
+        eud.grantRole(eud.FREEZE_ROLE(), address(this));
+
+        eud.mint(address(this), 1000);
+        eud.freeze(address(this), address(this), 1000);
+        eud.pause();
+    }
+
+    function invariant_paused() public {
+        assertTrue(eud.paused(), "EUD should be paused");
+    }
+
+    function test_CannotTransfer() public {
+        vm.expectRevert("Pausable: paused");
+        eud.transfer(address(this), 0);
+    }
+
+    function test_CannotTransferFrom() public {
+        vm.expectRevert("Pausable: paused");
+        eud.transferFrom(address(this), address(0), 0);
+    }
+
+    function test_burn() public {
+        eud.burn(address(this), 10);
+    }
+
+    function test_mint() public {
+        eud.mint(address(this), 10);
+    }
+
+    function test_reclaim() public {
+        eud.reclaim(address(this), address(this), 10);
+    }
+
+    function test_freeze() public {
+        eud.freeze(address(this), address(this), 10);
+    }
+
+    function test_release() public {
+        eud.release(address(this), address(this), 10);
+    }
+
+    function test_addSingleToBlocklist_removeFromBlocklist() public {
+        address[] memory accounts = new address[](1);
+        accounts[0] = address(0x10);
+
+        eud.addToBlocklist(accounts);
+        eud.removeFromBlocklist(accounts);
+    }
+
+    function test_addManyToBlocklist_removeManyFromBlocklist() public {
+        address[] memory accounts = new address[](3);
+        accounts[0] = address(0x10);
+        accounts[1] = address(0x11);
+        accounts[2] = address(0x12);
+        eud.addToBlocklist(accounts);
+        eud.removeFromBlocklist(accounts);
+    }
 }

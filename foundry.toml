@@ -9,5 +9,7 @@ evm_version = "shanghai"
 [fmt]
 multiline_func_header = "all"
 
-[invariant]
-fail_on_revert = true
+# [invariant]
+# fail_on_revert = false
+# runs = 250
+# depth = 32

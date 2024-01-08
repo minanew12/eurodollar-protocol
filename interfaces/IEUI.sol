@@ -4,6 +4,8 @@ pragma solidity ^0.8.21;
 interface IEUI {
     function decimals() external view returns (uint8);
 
+    function totalAssets() external view returns (uint256);
+
     function allowance(
         address owner,
         address spender

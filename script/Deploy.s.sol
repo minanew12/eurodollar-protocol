@@ -24,10 +24,10 @@ contract Deploy is Script {
         console.log("EUDProxy address:");
         console.log(address(eudProxy));
 
-        EUI euiImplementation = new EUI();
+        EUI euiImplementation = new EUI(address(eudProxy));
         console.log("EUI implementation address:");
         ERC1967Proxy euiProxy =
-        new ERC1967Proxy(address(euiImplementation), abi.encodeCall(EUI.initialize, (address(eudProxy), address(oracle))));
+            new ERC1967Proxy(address(euiImplementation), abi.encodeCall(EUI.initialize, (address(oracle))));
         console.log("EUIProxy address:");
         console.log(address(euiProxy));
         vm.stopBroadcast();
