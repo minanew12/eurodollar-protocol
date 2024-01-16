@@ -2,8 +2,8 @@
 
 ## System overview
 
-The Eurodollar Protocol consists of two tokens, EUD a compliant USD stablecoin and EUI, a compliant yield token, and a price oracle. which allows seamless conversion between the two tokens. The system is designed to be compliant with EU regulation regarding stablecoins (MICA) and security tokens (MIFID2).
-The solutions utilizes OpenZeppelin contracts for the tokens, to ensure upgradeability is implemented, without having to roll our own upgradeability patterns.
+The Eurodollar Protocol consists of two tokens, EUD a compliant USD stablecoin and EUI, a compliant yield token, and a price oracle, which allows seamless conversion between the two tokens. The system is designed to be compliant with EU regulation regarding stablecoins (MICA) and security tokens (MIFID2).
+The solutions utilizes OpenZeppelin contracts for the tokens, to ensure upgradeability is implemented.
 
 ## EUD
 
