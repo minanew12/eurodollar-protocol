@@ -1,44 +1,54 @@
 // SPDX-License-Identifier: MIT
 // SPDX-FileCopyrightText: © 2023 Rhinefield Technologies Limited
-
 pragma solidity ^0.8.21;
 
-import {Pausable} from "oz/security/Pausable.sol";
-import {AccessControl} from "oz/access/AccessControl.sol";
-import {Math} from "oz/utils/math/Math.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {IYieldOracle} from "./interfaces/IYieldOracle.sol";
 
-error InsufficientUpdateDelay();
-error InsufficientCommitDelay();
-error PriceOutOfBounds();
-error DelayOutOfBounds();
+contract YieldOracle is IYieldOracle, Ownable {
+    /*  CONSTANTS */
 
-uint256 constant MIN_PRICE = 1e18; // Minimum EUIEUD price
-uint256 constant NO_PRICE = 0; // Sentinel value to indicate empty
+    uint256 internal constant MIN_PRICE = 1e18; // Minimum price
+    uint256 internal constant NO_PRICE = 0; // Sentinel value to indicate empty
 
-/**
- * @author  Rhinefield Technologies Limited
- * @title   YieldOracle
- * @notice  The YieldOracle contract provides the EUI yield accrual price mechanism.
- */
-contract YieldOracle is AccessControl {
-    uint256 public maxPriceIncrease; // Guardrail to limit how much the price can be increased in a single update
-    uint256 public lastUpdate; // Timestamp of the last price update
+    /*  STATE VARIABLES */
 
+    /// @notice Address of the oracle that updates the price.
+    address public oracle;
+
+    /// @notice Last time the price was updated.
+    uint256 public lastUpdate;
+    /// @notice Delay between updates.
     uint256 public updateDelay;
+    /// @notice Delay between commits.
     uint256 public commitDelay;
 
-    uint256 public previousPrice; // When we go from EUI to EUD
-    uint256 public currentPrice; // When we go from EUD to EUI
+    uint256 public previousPrice;
+    uint256 public currentPrice;
     uint256 public nextPrice;
+    uint256 public maxPriceIncrease;
 
-    // Roles
-    bytes32 public constant ORACLE_ROLE = keccak256("ORACLE_ROLE");
+    /*  EVENTS */
 
-    /**
-     * @notice  Constructor to initialize the YieldOracle contract.
-     */
-    constructor() {
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+    /// @notice Emitted when the price is updated.
+    event PriceUpdated(uint256 newPrice);
+    /// @notice Emitted when the price is committed.
+    event PriceCommitted(uint256 newCurrentPrice);
+
+    /*  MODIFIERS */
+
+    /// @notice Modifier to assure the caller is the oracle.
+    modifier onlyOracle() {
+        require(msg.sender == oracle, "Restricted to oracle only");
+        _;
+    }
+
+    /*  CONSTRUCTOR */
+
+    constructor(address _initialOwner, address _initialOracle) Ownable(_initialOwner) {
+        oracle = _initialOracle;
+
         previousPrice = MIN_PRICE;
         currentPrice = MIN_PRICE;
         nextPrice = NO_PRICE;
@@ -50,149 +60,127 @@ contract YieldOracle is AccessControl {
         lastUpdate = block.timestamp;
     }
 
+    /*  PUBLIC FUNCTIONS */
+
     /**
-     * @notice Updates the price of the YieldOracle contract.
+     * @notice Updates the price.
      * @param price The new price to be set.
-     * @return bool Returns true if the price is successfully updated.
      */
-    function updatePrice(uint256 price) external onlyRole(ORACLE_ROLE) returns (bool) {
+    function updatePrice(uint256 price) external onlyOracle {
         // Enforce at least updateDelay between updates
-        if (block.timestamp < lastUpdate + updateDelay) {
-            revert InsufficientUpdateDelay();
-        }
+        require(lastUpdate + updateDelay < block.timestamp, "Insufficient update delay");
 
-        // If the previous update has not yet been committed, commit now to preserve
-        // the invariant that previousPrice <= currentPrice <= nextPrice
         if (nextPrice != NO_PRICE) {
-            commitPrice();
+            previousPrice = currentPrice;
+            currentPrice = nextPrice;
+
+            emit PriceCommitted(currentPrice);
         }
 
-        // Save value (solc lacking taint analysis here?)
-        uint256 _currentPrice = currentPrice;
-
-        // price \in [currentPrice, currentPrice + maxPriceIncrease] (both inclusive)
-        if (price < _currentPrice || price - _currentPrice > maxPriceIncrease) {
-            revert PriceOutOfBounds();
-        }
+        require(price - currentPrice <= maxPriceIncrease, "Price out of bounds");
 
         nextPrice = price;
         lastUpdate = block.timestamp;
-        return true;
+
+        emit PriceUpdated(price);
     }
 
-    function commitPrice() public returns (bool) {
-        // Save values (solc lacking taint analysis here?)
-        uint256 _nextPrice = nextPrice;
-        uint256 _currentPrice = currentPrice;
+    /**
+     * @notice Commits the price.
+     */
+    function commitPrice() public {
+        require(nextPrice - currentPrice >= 0, "Price out of bounds");
 
-        // nextPrice must be set and
-        if (_nextPrice == NO_PRICE || _nextPrice < _currentPrice) {
-            revert PriceOutOfBounds();
-        }
-
-        if (block.timestamp < lastUpdate + commitDelay) {
-            revert InsufficientCommitDelay();
-        }
+        // Enforce at least commitDelay after the last update
+        require(lastUpdate + commitDelay < block.timestamp, "Insufficient commit delay");
 
         previousPrice = currentPrice;
         currentPrice = nextPrice;
         nextPrice = NO_PRICE;
 
-        return true;
+        emit PriceCommitted(currentPrice);
+    }
+
+    /*  ADMIN FUNCTIONS */
+
+    /**
+     * @notice Sets the oracle.
+     * @param _oracle The new oracle.
+     */
+    function setOracle(address _oracle) external onlyOwner {
+        oracle = _oracle;
     }
 
     /**
-     * @notice Sets the maximum price increase allowed for the YieldOracle.
-     * @param maxPriceIncrease_ The new maximum price increase value.
-     * @return A boolean indicating whether the operation was successful.
+     * @notice Updates the maximum price increase.
+     * @param _maxPriceIncrease The new maximum price increase.
      */
-    function adminUpdateMaxPriceIncrease(uint256 maxPriceIncrease_)
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-        returns (bool)
-    {
-        maxPriceIncrease = maxPriceIncrease_;
-        return true;
+    function setMaxPriceIncrease(uint256 _maxPriceIncrease) external onlyOwner {
+        maxPriceIncrease = _maxPriceIncrease;
     }
 
     /**
-     * @notice Sets the delay for the YieldOracle contract.
-     * @param delay The new delay value to be set.
-     * @return bool Returns true if the delay was successfully set.
+     * @notice Updates the commit delay.
+     * @param delay The new commit delay.
      */
-    function adminCommitDelay(uint256 delay) external onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
-        if (delay > updateDelay) {
-            revert DelayOutOfBounds();
-        }
+    function setCommitDelay(uint256 delay) external onlyOwner {
+        require(delay <= updateDelay, "Delay out of bounds");
 
         commitDelay = delay;
-        return true;
     }
 
     /**
-     * @notice Sets the delay for the YieldOracle contract.
-     * @param delay The new delay value to be set.
-     * @return bool Returns true if the delay was successfully set.
+     * @notice Updates the update delay.
+     * @param delay The new update delay.
      */
-    function adminUpdateDelay(uint256 delay) external onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
-        if (delay < commitDelay) {
-            revert DelayOutOfBounds();
-        }
+    function setUpdateDelay(uint256 delay) external onlyOwner {
+        require(commitDelay <= delay, "Delay out of bounds");
 
         updateDelay = delay;
-        return true;
     }
 
     /**
-     * @notice Allows the admin to update the current price of the YieldOracle.
-     * @param price The new price to be set.
-     * @return A boolean indicating whether the update was successful or not.
+     * @notice Updates the current price.
+     * @param price The new current price.
      */
-    function adminUpdateCurrentPrice(uint256 price) external onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
-        if (price < MIN_PRICE || price < previousPrice) {
-            revert PriceOutOfBounds();
-        }
+    function setCurrentPrice(uint256 price) external onlyOwner {
+        require(MIN_PRICE <= price && previousPrice <= price, "Price out of bounds");
 
         currentPrice = price;
-
-        return true;
     }
 
     /**
-     * @dev Allows the admin to update the previous price of the YieldOracle contract.
-     * @param price The new old price to be set.
-     * @return A boolean indicating whether the update was successful or not.
+     * @notice Updates the previous price.
+     * @param price The new previous price.
      */
-    function adminUpdatePreviousPrice(uint256 price) external onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
-        if (price < MIN_PRICE || price > currentPrice) {
-            revert PriceOutOfBounds();
-        }
+    function setPreviousPrice(uint256 price) external onlyOwner {
+        require(MIN_PRICE <= price && price <= currentPrice, "Price out of bounds");
 
         previousPrice = price;
-
-        return true;
-    }
-
-    function adminResetNextPrice() external onlyRole(DEFAULT_ADMIN_ROLE) returns (bool) {
-        nextPrice = 0;
-        return true;
     }
 
     /**
-     * @notice Function to calculate the equivalent amount of EUI tokens for a given amount of EUD tokens.
-     * @param eudAmount The amount of EUD tokens for which the equivalent EUI tokens need to be calculated.
-     * @return uint256 The equivalent amount of EUI tokens based on the current price from the yield oracle.
+     * @notice Resets the next price.
      */
-    function fromEudToEui(uint256 eudAmount) public view returns (uint256) {
-        return Math.mulDiv(eudAmount, 10 ** 18, currentPrice);
+    function resetNextPrice() external onlyOwner {
+        nextPrice = NO_PRICE;
     }
 
     /**
-     * @notice Function to calculate the equivalent amount of EUD tokens for a given amount of EUI tokens.
-     * @param euiAmount The amount of EUI tokens for which the equivalent EUD tokens need to be calculated.
-     * @return uint256 The equivalent amount of EUD tokens based on the old price from the yield oracle.
+     * @notice Converts assets to shares.
+     * @param assets The amount of assets.
+     * @return The amount of shares.
      */
-    function fromEuiToEud(uint256 euiAmount) public view returns (uint256) {
-        return Math.mulDiv(euiAmount, previousPrice, 10 ** 18);
+    function assetsToShares(uint256 assets) external view returns (uint256) {
+        return Math.mulDiv(assets, 10 ** 18, currentPrice);
+    }
+
+    /**
+     * @notice Converts shares to assets.
+     * @param shares The amount of shares.
+     * @return The amount of assets.
+     */
+    function sharesToAssets(uint256 shares) external view returns (uint256) {
+        return Math.mulDiv(shares, previousPrice, 10 ** 18);
     }
 }
