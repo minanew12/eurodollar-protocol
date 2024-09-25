@@ -1,333 +1,183 @@
 // SPDX-License-Identifier: MIT
 // SPDX-FileCopyrightText: © 2023 Rhinefield Technologies Limited
-
 pragma solidity ^0.8.21;
 
-import {Initializable} from "oz-up/proxy/utils/Initializable.sol";
-import {PausableUpgradeable} from "oz-up/security/PausableUpgradeable.sol";
-import {ERC20PermitUpgradeable} from "oz-up/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
-import {UUPSUpgradeable} from "oz-up/proxy/utils/UUPSUpgradeable.sol";
-import {AccessControlUpgradeable} from "oz-up/access/AccessControlUpgradeable.sol";
-import {IEUI} from "../interfaces/IEUI.sol";
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {ERC20PausableUpgradeable} from
+    "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PausableUpgradeable.sol";
+import {ERC20PermitUpgradeable} from
+    "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
+import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
+import {IValidator} from "./interfaces/IValidator.sol";
 
 /**
  * @author Rhinefield Technologies Limited
- * @title EUD - Eurodollar Token
+ * @title Eurodollar Stablecoin
  */
-
 contract EUD is
     Initializable,
-    PausableUpgradeable,
+    ERC20Upgradeable,
+    ERC20PausableUpgradeable,
     ERC20PermitUpgradeable,
-    UUPSUpgradeable,
-    AccessControlUpgradeable
+    AccessControlUpgradeable,
+    UUPSUpgradeable
 {
-    // @notice Blocklist contains addresses that are not allowed to send or receive tokens.
-    mapping(address => bool) public blocklist;
-    // @notice Mapping of frozen balances that cannot be transferred.
-    mapping(address => uint256) public frozenBalances;
+    using SignatureChecker for address;
 
-    IEUI public eui;
+    /* ROLES */
 
-    // Roles
-    bytes32 public constant PAUSE_ROLE = keccak256("PAUSE_ROLE");
+    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant MINT_ROLE = keccak256("MINT_ROLE");
     bytes32 public constant BURN_ROLE = keccak256("BURN_ROLE");
-    bytes32 public constant BLOCK_ROLE = keccak256("BLOCK_ROLE");
-    bytes32 public constant FREEZE_ROLE = keccak256("FREEZE_ROLE");
+    bytes32 public constant RESCUER_ROLE = keccak256("RESCUER_ROLE");
+    bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
+
+    /* STATE VARIABLES */
+
+    /// @notice Address of the validator contract
+    IValidator public immutable validator;
+
+    /* EVENTS */
+
+    event Recovered(address indexed from, address indexed to, uint256 amount);
+
+    /* CONSTRUCTOR */
 
     /**
-     * @dev Modifier to check if an account is not blocked.
-     * @param account The address of the account to check.
+     * @dev Constructor that sets the validator and disables initializers.
+     * @param _validator Address of the validator contract
+     * @custom:oz-upgrades-unsafe-allow constructor
      */
-    modifier notBlocked(address account) {
-        require(blocklist[account] == false, "Account is blocked");
-        _;
-    }
-
-    modifier notBlocked2(address a, address b) {
-        require(blocklist[a] == false, "Account is blocked");
-        if (a != b) require(blocklist[b] == false, "Account is blocked");
-        _;
-    }
-
-    // Events
-    event AddedToBlocklist(address indexed account);
-    event RemovedFromBlocklist(address indexed account);
-    event Freeze(address indexed from, address indexed to, uint256 amount);
-    event Release(address indexed from, address indexed to, uint256 amount);
-    event Reclaim(address indexed from, address indexed to, uint256 amount);
-
-    /**
-     * @notice Disables initializers for implementation contract.
-     */
-    /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() {
+    constructor(IValidator _validator) {
+        validator = _validator;
         _disableInitializers();
     }
 
     /**
-     * @notice  This function is called only once during the contract deployment process.
-     * @notice  It sets up the EUD token with essential features and permissions.
+     * @dev Initializes the contract, setting up roles and initial state.
+     * @param _initialOwner Address of the initial owner (granted DEFAULT_ADMIN_ROLE)
      */
-    function initialize() public initializer {
+    function initialize(address _initialOwner) public initializer {
         __ERC20_init("EuroDollar", "EUD");
-        __Pausable_init();
+        __ERC20Pausable_init();
         __ERC20Permit_init("EuroDollar");
+        __AccessControl_init();
         __UUPSUpgradeable_init();
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+
+        _grantRole(DEFAULT_ADMIN_ROLE, _initialOwner);
     }
 
-    function setEui(address eui_) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        eui = IEUI(eui_);
-    }
-
-    /// ---------- ERC20 FUNCTIONS ---------- ///
-    /**
-     * @notice Returns the total supply of the token.
-     * @notice If the EUI contract is set, include the total assets of the EUI.
-     * @return The total supply of the token.
-     */
-    function totalSupply() public view override returns (uint256) {
-        uint256 euiTotalAssets = 0;
-        if (address(eui) != address(0)) {
-            euiTotalAssets = eui.totalAssets();
-        }
-
-        return super.totalSupply() + euiTotalAssets;
-    }
+    /* ERC20 FUNCTIONS */
 
     /**
-     * @notice Transfers tokens from msg.sender to a specified recipient.
-     * @notice The sender or receiver account must not be on the blocklist.
-     * @param to The address to transfer tokens to.
-     * @param amount The amount of tokens to transfer.
-     * @return A boolean value indicating whether the transfer was successful.
+     * @dev Overrides the _update function to include validation check.
+     * @param from Address tokens are transferred from
+     * @param to Address tokens are transferred to
+     * @param amount Amount of tokens transferred
      */
-    function transfer(
-        address to,
-        uint256 amount
-    )
-        public
-        override
-        notBlocked2(msg.sender, to)
-        whenNotPaused
-        returns (bool)
-    {
-        return super.transfer(to, amount);
-    }
-
-    /**
-     * @notice Transfers tokens from one address to another if approval is granted.
-     * @notice The sender or receiver account must not be on the blocklist.
-     * @param from The address which you want to send tokens from.
-     * @param to The address which you want to transfer to.
-     * @param amount The amount of tokens to be transferred.
-     * @return A boolean that indicates if the operation was successful.
-     */
-    function transferFrom(
+    function _update(
         address from,
         address to,
         uint256 amount
     )
+        internal
+        override(ERC20Upgradeable, ERC20PausableUpgradeable)
+    {
+        require(validator.isValid(from, to), "account blocked");
+
+        super._update(from, to, amount);
+    }
+
+    /**
+     * @dev Mints new tokens. Can only be called by accounts with MINT_ROLE.
+     * @param to Address to mint tokens to
+     * @param amount Amount of tokens to mint
+     * @return bool indicating success
+     */
+    function mint(address to, uint256 amount) public onlyRole(MINT_ROLE) returns (bool) {
+        _mint(to, amount);
+
+        return true;
+    }
+
+    /**
+     * @dev Burns tokens. Can only be called by accounts with BURN_ROLE.
+     * @param from Address to burn tokens from
+     * @param amount Amount of tokens to burn
+     * @return bool indicating success
+     */
+    function burn(address from, uint256 amount) public onlyRole(BURN_ROLE) returns (bool) {
+        _burn(from, amount);
+
+        return true;
+    }
+
+    /**
+     * @dev Burns tokens with signature verification. Can only be called by accounts with BURN_ROLE.
+     * @param from Address to burn tokens from
+     * @param amount Amount of tokens to burn
+     * @param h Hash of the message signed
+     * @param signature Signature of the message
+     * @return bool indicating success
+     */
+    function burn(
+        address from,
+        uint256 amount,
+        bytes32 h,
+        bytes memory signature
+    )
         public
-        override
-        notBlocked2(from, to)
-        whenNotPaused
+        onlyRole(BURN_ROLE)
         returns (bool)
     {
-        return super.transferFrom(from, to, amount);
+        require(from.isValidSignatureNow(h, signature), "signature/hash does not match");
+
+        _burn(from, amount);
+
+        return true;
     }
 
-    /// ---------- SUPPLY MANAGEMENT FUNCTIONS ---------- ///
     /**
-     * @notice  Mints new tokens and adds them to the specified account.
-     * @notice  This function can only be called by an account with the `MINT_ROLE`.
-     * @notice  The recipient's account must not be on the blocklist.
-     * @param   to  The address to receive the newly minted tokens.
-     * @param   amount  The amount of tokens to mint to the account.
+     * @dev Recovers tokens from one address to another. Can only be called by accounts with RESCUER_ROLE.
+     * @param from Address to recover tokens from
+     * @param to Address to recover tokens to
+     * @param amount Amount of tokens to recover
+     * @return bool indicating success
      */
-    function mint(address to, uint256 amount) public onlyRole(MINT_ROLE) notBlocked(to) {
+    function recover(address from, address to, uint256 amount) public onlyRole(RESCUER_ROLE) returns (bool) {
+        _burn(from, amount);
         _mint(to, amount);
+
+        emit Recovered(from, to, amount);
+
+        return true;
     }
 
-    /**
-     * @notice  Burns a specific amount of tokens from a specified account.
-     * @notice  This function can only be called by an account with the `BURN_ROLE`.
-     * @param   from  The address from which tokens will be burned.
-     * @param   amount  The amount of tokens to be burned.
-     */
-    function burn(address from, uint256 amount) public onlyRole(BURN_ROLE) {
-        _burn(from, amount);
-    }
+    /* ADMIN FUNCTIONS */
 
     /**
-     * @notice  Burns tokens as if performing a transferFrom and burn in one call.
-     * @notice  This function is specifically tailored to EUI use cases.
-     * @notice  This function can only be called by an account with the `BURN_ROLE`.
-     * @param   from  The address from which tokens will be burned.
-     * @param   spender  The address that is allowed to spend the tokens.
-     * @param   amount  The amount of tokens to be burned.
+     * @notice Pauses the contract. Can only be called by accounts with PAUSER_ROLE.
      */
-    function burnFrom(address from, address spender, uint256 amount) public whenNotPaused onlyRole(BURN_ROLE) {
-        if (from != spender) {
-            _spendAllowance(from, spender, amount);
-        }
-
-        _burn(from, amount);
-    }
-
-    /// ---------- TOKEN MANAGEMENT FUNCTIONS ---------- ///
-    /**
-     * @notice  This function can only be called by an account with the `PAUSE_ROLE`.
-     * @notice  Once paused, certain operations are unavailable until the contract is unpaused.
-     */
-    function pause() public onlyRole(PAUSE_ROLE) {
+    function pause() public onlyRole(PAUSER_ROLE) {
         _pause();
     }
 
     /**
-     * @notice  This function can only be called by an account with the `PAUSE_ROLE`.
-     * @notice  It resumes certain functionalities of the contract that were previously paused.
+     * @notice Unpauses the contract. Can only be called by accounts with PAUSER_ROLE.
      */
-    function unpause() public onlyRole(PAUSE_ROLE) {
+    function unpause() public onlyRole(PAUSER_ROLE) {
         _unpause();
     }
 
-    /**
-     * @notice Freezes a specified amount of tokens from a specified address.
-     * @notice Only callable by accounts with the `FREEZE_ROLE`.
-     * @notice The `to` address will be a contract address that will hold the frozen tokens.
-     * @param from The address to freeze tokens from.
-     * @param to The address to transfer the frozen tokens to.
-     * @param amount The amount of tokens to freeze.
-     * @return A boolean value indicating whether the operation succeeded.
-     */
-    function freeze(
-        address from,
-        address to,
-        uint256 amount
-    )
-        external
-        onlyRole(FREEZE_ROLE)
-        notBlocked(to)
-        returns (bool)
-    {
-        _transfer(from, to, amount);
-        unchecked {
-            frozenBalances[from] += amount;
-        }
-        emit Freeze(from, to, amount);
-        return true;
-    }
-
-    /**
-     * @notice Release a specified amount of frozen tokens.
-     * @notice Only callable by accounts with the `FREEZE_ROLE`.
-     * @param from The address that currently holds the frozen tokens.
-     * @param to The address that will receive the released tokens.
-     * @param amount The amount of tokens to release.
-     * @return A boolean indicating whether the release was successful.
-     */
-    function release(
-        address from,
-        address to,
-        uint256 amount
-    )
-        external
-        onlyRole(FREEZE_ROLE)
-        notBlocked(to)
-        returns (bool)
-    {
-        require(frozenBalances[to] >= amount, "Release amount exceeds balance");
-        unchecked {
-            frozenBalances[to] -= amount;
-        }
-        _transfer(from, to, amount);
-        emit Release(from, to, amount);
-        return true;
-    }
-
-    /**
-     * @notice Reclaims tokens from one address and mints them to another address.
-     * @notice Only callable by accounts with the `FREEZE_ROLE`.
-     * @notice Can be used in the event of lost user access to tokens.
-     * @param from The address of the account to reclaim tokens from.
-     * @param to The address of the account to mint tokens to.
-     * @param amount The amount of tokens to reclaim and mint.
-     * @return A boolean value indicating whether the operation succeeded.
-     */
-    function reclaim(
-        address from,
-        address to,
-        uint256 amount
-    )
-        external
-        onlyRole(FREEZE_ROLE)
-        notBlocked(to)
-        returns (bool)
-    {
-        _burn(from, amount);
-        _mint(to, amount);
-        emit Reclaim(from, to, amount);
-        return true;
-    }
-
-    /**
-     * @notice  Add multiple addresses to the blocklist.
-     * @notice Only callable by accounts with the `BLOCK_ROLE`.
-     * @param   accounts The addresses to be added to the blocklist.
-     */
-    function addToBlocklist(address[] calldata accounts) external onlyRole(BLOCK_ROLE) {
-        for (uint256 i; i < accounts.length; i++) {
-            _addToBlocklist(accounts[i]);
-        }
-    }
-
-    /**
-     * @notice  Add a single address to the blocklist.
-     * @notice  Only callable by accounts with the `BLOCK_ROLE`.
-     * @param   account The address to be added to the blocklist.
-     */
-    function addToBlocklist(address account) external onlyRole(BLOCK_ROLE) {
-        _addToBlocklist(account);
-    }
-
-    /**
-     * @notice  Remove multiple addresses from the blocklist.
-     * @notice  Only callable by accounts with the `BLOCK_ROLE`.
-     * @param   accounts The addresses to be removed from the blocklist.
-     */
-    function removeFromBlocklist(address[] calldata accounts) external onlyRole(BLOCK_ROLE) {
-        for (uint256 i; i < accounts.length; i++) {
-            _removeFromBlocklist(accounts[i]);
-        }
-    }
-
-    /**
-     * @notice  Remove a single address from the blocklist.
-     * @notice  Only callable by accounts with the `BLOCK_ROLE`.
-     * @param   account The address to be removed from the blocklist.
-     */
-    function removeFromBlocklist(address account) external onlyRole(BLOCK_ROLE) {
-        _removeFromBlocklist(account);
-    }
-
-    function _addToBlocklist(address account) internal {
-        blocklist[account] = true;
-        emit AddedToBlocklist(account);
-    }
-
-    function _removeFromBlocklist(address account) internal {
-        blocklist[account] = false;
-        emit RemovedFromBlocklist(account);
+    function renounceRole(bytes32, address) public pure override {
+        revert();
     }
 
     // ERC1967 Proxy
-    /**
-     * @notice  Internal function to authorize a contract upgrade.
-     * @notice  Only accounts with the `DEFAULT_ADMIN_ROLE` can call this function.
-     * @param   newImplementation  The address of the new implementation contract.
-     */
-    function _authorizeUpgrade(address newImplementation) internal override onlyRole(DEFAULT_ADMIN_ROLE) {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {}
+
+    uint256[50] private __gap;
 }
