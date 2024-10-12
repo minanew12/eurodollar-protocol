@@ -4,7 +4,7 @@
 pragma solidity ^0.8.21;
 
 contract Constants {
-    uint256 public constant MIN_PRICE = 1e18; // Minimum EUIEUD price
+    uint256 public constant MIN_PRICE = 1e18; // Minimum EUI/USDE price
     bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;
     bytes32 public constant MINT_ROLE = keccak256("MINT_ROLE");
     bytes32 public constant BURN_ROLE = keccak256("BURN_ROLE");
