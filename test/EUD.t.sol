@@ -5,7 +5,7 @@ pragma solidity ^0.8.21;
 
 import {Test} from "forge-std/Test.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {EUD} from "../src/EUD.sol";
+import {USDE} from "../src/USDE.sol";
 import {Constants} from "./Constants.sol";
 import {InvestToken} from "../src/InvestToken.sol";
 import {YieldOracle} from "../src/YieldOracle.sol";

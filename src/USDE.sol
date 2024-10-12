@@ -17,7 +17,7 @@ import {IValidator} from "./interfaces/IValidator.sol";
  * @author Rhinefield Technologies Limited
  * @title Eurodollar Stablecoin
  */
-contract EUD is
+contract USDE is
     Initializable,
     ERC20Upgradeable,
     ERC20PausableUpgradeable,
@@ -61,7 +61,7 @@ contract EUD is
      * @param _initialOwner Address of the initial owner (granted DEFAULT_ADMIN_ROLE)
      */
     function initialize(address _initialOwner) public initializer {
-        __ERC20_init("EuroDollar", "EUD");
+        __ERC20_init("EuroDollar", "USDE");
         __ERC20Pausable_init();
         __ERC20Permit_init("EuroDollar");
         __AccessControl_init();

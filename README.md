@@ -2,10 +2,46 @@
 
 ## System overview
 
-The Eurodollar Protocol consists of two tokens, EUD a compliant USD stablecoin and EUI, a compliant yield token, and a price oracle, which allows seamless conversion between the two tokens. The system is designed to be compliant with EU regulation regarding stablecoins (MICA) and security tokens (MIFID2).
+The Eurodollar Protocol consists of two types of tokens, USDE a compliant USD stablecoin and InvestToken (EUI), a compliant yield token, and a price oracle, which allows seamless conversion between the two tokens. The system is designed to be compliant with EU regulation regarding stablecoins (MICA) and security tokens (MIFID2).
+
 The solutions utilizes OpenZeppelin contracts for the tokens, to ensure upgradeability is implemented.
 
-## EUD
+## Getting Started
+
+### Prerequisites
+
+- [Foundry](https://book.getfoundry.sh/getting-started/installation)
+
+### Installation
+
+1. Install dependencies:
+```bash
+forge install
+```
+
+### Building
+
+1. Compile the contracts:
+```bash
+forge build
+```
+
+### Deployment
+
+1. Copy `.env.example` to `.env` and set your private key.
+
+2. Check `script/Deploy.s.sol` if you want to modify parameters.
+
+3. Run deployment script. For example, testing locally (anvil environment):
+```bash
+forge script script/Deploy.s.sol
+    --fork-url http://localhost:8545
+    --broadcast
+```
+
+
+
+<!-- ## EUD
 
 - Inherits OpenZeppelinUpgradeable contracts:
     - `Initializable` - For upgradeability.
@@ -130,4 +166,4 @@ The YieldOracle is not upgradeable. If we desire to change the pricing mechanism
     - `adminUpdateOldPric`e - updates the `oldPrice` while circumventing guardrail restrictions. Only used in case of oracle malfunctions. Must be greater than `MIN_PRIC`E. Can only be called by addresses with the `DEFAULT_ADMIN_ROLE`.
     - `adminUpdateCurrentPrice` - updates the `currentPrice` while circumventing guardrail restrictions. Only used in case of oracle malfunctions. Must be greater than `MIN_PRICE` and higher than oldPrice. Can only be called by addresses with the `DEFAULT_ADMIN_ROLE`.
     - `fromEudToEui` - calculates the conversion for a given amount of EUD to EUI. If not paused, it will return the given EUD amount multiplied by `1e18`, divided by `_currentPric`e. We multiply by `1e18`, because we use 18 decimals for our EUIEUD pricing. So we basically divide EUD amount with current EUIEUD price, and manage the decimals. The `Math.mulDiv` function rounds down as standard unless anything else is specified. We do this to avoid ever giving the user "too many” assets, to ensure each asset is always fully backed.
-    - `fromEuiToEud` - calculates the conversion for a given amount of EUI to EUD. If not paused, it will return the given EUI amount multiplied by `_oldPrice`, divided by `1e18`. We divide by 1e18, because we use 18 decimals for our EUIEUD pricing. So we basically multiply the EUI amount with current EUIEUD price, and manage the decimals. The `Math.mulDiv` function rounds down as standard unless anything else is specified. We do this to avoid ever giving the user "too many” assets, to ensure each asset is always fully backed.
+    - `fromEuiToEud` - calculates the conversion for a given amount of EUI to EUD. If not paused, it will return the given EUI amount multiplied by `_oldPrice`, divided by `1e18`. We divide by 1e18, because we use 18 decimals for our EUIEUD pricing. So we basically multiply the EUI amount with current EUIEUD price, and manage the decimals. The `Math.mulDiv` function rounds down as standard unless anything else is specified. We do this to avoid ever giving the user "too many” assets, to ensure each asset is always fully backed. -->
