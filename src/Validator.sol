@@ -138,6 +138,10 @@ contract Validator is AccessControl, IValidator {
      * @return valid True if the transfer is valid, false otherwise.
      */
     function isValidStrict(address from, address to) external view returns (bool valid) {
-        return accountStatus[from] == Status.WHITELISTED ? accountStatus[to] == Status.WHITELISTED : to == address(0x0);
+        return to == address(0x0)
+            || (
+                accountStatus[to] == Status.WHITELISTED
+                    && (from == address(0x0) || accountStatus[from] == Status.WHITELISTED)
+            );
     }
 }
