@@ -15,8 +15,6 @@ The stablecoin ERC20 token contract. Implements following functionality:
 - Burning, with or without provided signature
 - Recovering of funds
 - Pausing
-- UUPS upgradeablity
-- AccessControl for relevant functions
 
 ### InvestToken
 
